@@ -11,10 +11,16 @@ import {
   Circle,
   Edit3,
   Trash2,
-  BarChart3
+  BarChart3,
+  Star,
+  StarOff,
+  Filter,
+  Search
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { CareerPlan } from '../types';
+import { CareerPlan, UserProgress } from '../types';
+import { getUserCareerPlans, deleteCareerPlan, toggleFavorite } from '../services/careerService';
+import { getProgress, updateProgress } from '../services/apiService';
 
 interface DashboardProps {
   user: any;
@@ -26,24 +32,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
   const [careerPlans, setCareerPlans] = useState<CareerPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<CareerPlan | null>(null);
-  const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+  const [userProgress, setUserProgress] = useState<{ [key: string]: boolean }>({});
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'favorites'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchCareerPlans();
   }, []);
 
+  useEffect(() => {
+    if (selectedPlan?.id) {
+      fetchProgress(selectedPlan.id);
+    }
+  }, [selectedPlan]);
+
   const fetchCareerPlans = async () => {
     try {
-      const { data, error } = await supabase
-        .from('career_plans')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setCareerPlans(data || []);
-      if (data && data.length > 0) {
-        setSelectedPlan(data[0]);
+      const plans = await getUserCareerPlans(user.id);
+      setCareerPlans(plans);
+      if (plans.length > 0) {
+        setSelectedPlan(plans[0]);
       }
     } catch (error) {
       console.error('Error fetching career plans:', error);
@@ -52,25 +60,38 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
     }
   };
 
-  const toggleTask = (taskId: string) => {
-    const newCompleted = new Set(completedTasks);
-    if (newCompleted.has(taskId)) {
-      newCompleted.delete(taskId);
-    } else {
-      newCompleted.add(taskId);
+  const fetchProgress = async (careerPlanId: string) => {
+    try {
+      const response = await getProgress(careerPlanId);
+      const progressMap: { [key: string]: boolean } = {};
+      response.progress?.forEach((item: any) => {
+        progressMap[item.task_id] = item.completed;
+      });
+      setUserProgress(progressMap);
+    } catch (error) {
+      console.error('Error fetching progress:', error);
     }
-    setCompletedTasks(newCompleted);
   };
 
-  const deletePlan = async (planId: string) => {
-    try {
-      const { error } = await supabase
-        .from('career_plans')
-        .delete()
-        .eq('id', planId);
+  const toggleTask = async (taskId: string, completed: boolean) => {
+    if (!selectedPlan?.id) return;
 
-      if (error) throw error;
-      
+    try {
+      await updateProgress(selectedPlan.id, taskId, 'learning', completed);
+      setUserProgress(prev => ({
+        ...prev,
+        [taskId]: completed
+      }));
+    } catch (error) {
+      console.error('Error updating progress:', error);
+    }
+  };
+
+  const handleDeletePlan = async (planId: string) => {
+    if (!confirm('Are you sure you want to delete this career plan?')) return;
+
+    try {
+      await deleteCareerPlan(planId);
       setCareerPlans(plans => plans.filter(plan => plan.id !== planId));
       if (selectedPlan?.id === planId) {
         setSelectedPlan(careerPlans.length > 1 ? careerPlans[0] : null);
@@ -79,6 +100,37 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
       console.error('Error deleting plan:', error);
     }
   };
+
+  const handleToggleFavorite = async (planId: string, isFavorite: boolean) => {
+    try {
+      await toggleFavorite(planId, !isFavorite);
+      setCareerPlans(plans => 
+        plans.map(plan => 
+          plan.id === planId ? { ...plan, isFavorite: !isFavorite } : plan
+        )
+      );
+      if (selectedPlan?.id === planId) {
+        setSelectedPlan(prev => prev ? { ...prev, isFavorite: !isFavorite } : null);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const filteredPlans = careerPlans.filter(plan => {
+    const matchesFilter = 
+      filter === 'all' || 
+      (filter === 'active' && plan.status === 'active') ||
+      (filter === 'completed' && plan.status === 'completed') ||
+      (filter === 'favorites' && plan.isFavorite);
+    
+    const matchesSearch = 
+      !searchTerm || 
+      plan.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      plan.userProfile.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
 
   if (loading) {
     return (
@@ -133,46 +185,142 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">Completed Tasks</span>
-                  <span className="font-medium">{completedTasks.size}</span>
+                  <span className="font-medium">{Object.values(userProgress).filter(Boolean).length}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Favorites</span>
+                  <span className="font-medium">{careerPlans.filter(p => p.isFavorite).length}</span>
                 </div>
               </div>
             </div>
 
-            <div className="card p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">Your Plans</h3>
+            {/* Filters */}
+            <div className="card p-6 mb-6">
+              <h3 className="font-semibold text-gray-800 mb-4">Filter Plans</h3>
               <div className="space-y-2">
-                {careerPlans.map((plan) => (
+                {[
+                  { key: 'all', label: 'All Plans' },
+                  { key: 'active', label: 'Active' },
+                  { key: 'completed', label: 'Completed' },
+                  { key: 'favorites', label: 'Favorites' }
+                ].map(({ key, label }) => (
                   <button
-                    key={plan.id}
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      selectedPlan?.id === plan.id
-                        ? 'bg-primary-50 border border-primary-200'
+                    key={key}
+                    onClick={() => setFilter(key as any)}
+                    className={`w-full text-left p-2 rounded-lg transition-colors ${
+                      filter === key
+                        ? 'bg-primary-50 text-primary-700 border border-primary-200'
                         : 'hover:bg-gray-50'
                     }`}
                   >
-                    <div className="font-medium text-sm text-gray-800 truncate">
-                      {plan.user_profile?.name || 'Career Plan'}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(plan.created_at || '').toLocaleDateString()}
-                    </div>
+                    {label}
                   </button>
                 ))}
-                
-                <button
-                  onClick={onCreateNew}
-                  className="w-full flex items-center justify-center space-x-2 p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-sm font-medium">Create New Plan</span>
-                </button>
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="card p-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search plans..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
               </div>
             </div>
           </div>
 
           {/* Main Content */}
           <div className="lg:col-span-3">
+            {/* Plans List */}
+            <div className="card p-6 mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Your Career Plans</h3>
+                <button
+                  onClick={onCreateNew}
+                  className="btn-primary flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create New Plan</span>
+                </button>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPlans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+                      selectedPlan?.id === plan.id
+                        ? 'border-primary-300 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => setSelectedPlan(plan)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h4 className="font-semibold text-gray-800 truncate">
+                        {plan.title || `Plan for ${plan.userProfile.name}`}
+                      </h4>
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(plan.id!, plan.isFavorite || false);
+                          }}
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          {plan.isFavorite ? (
+                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          ) : (
+                            <StarOff className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePlan(plan.id!);
+                          }}
+                          className="p-1 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Progress</span>
+                        <span className="font-medium">{plan.progressPercentage || 0}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-primary-500 h-2 rounded-full transition-all"
+                          style={{ width: `${plan.progressPercentage || 0}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Status</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          plan.status === 'completed' 
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {plan.status || 'active'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(plan.createdAt || '').toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Selected Plan Details */}
             {selectedPlan ? (
               <div className="space-y-8">
                 {/* Plan Overview */}
@@ -180,21 +328,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                   <div className="flex items-start justify-between mb-6">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                        Career Plan for {selectedPlan.user_profile?.name}
+                        {selectedPlan.title || `Career Plan for ${selectedPlan.userProfile.name}`}
                       </h2>
                       <p className="text-gray-600">
-                        Created on {new Date(selectedPlan.created_at || '').toLocaleDateString()}
+                        Created on {new Date(selectedPlan.createdAt || '').toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex space-x-2">
                       <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <Edit3 className="h-5 w-5 text-gray-600" />
-                      </button>
-                      <button 
-                        onClick={() => deletePlan(selectedPlan.id!)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="h-5 w-5 text-red-600" />
                       </button>
                     </div>
                   </div>
@@ -206,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                       </div>
                       <h3 className="font-semibold text-gray-800">Career Paths</h3>
                       <p className="text-2xl font-bold text-blue-600">
-                        {selectedPlan.career_recommendations?.length || 0}
+                        {selectedPlan.careerRecommendations?.length || 0}
                       </p>
                     </div>
                     
@@ -216,7 +358,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                       </div>
                       <h3 className="font-semibold text-gray-800">Skills to Learn</h3>
                       <p className="text-2xl font-bold text-green-600">
-                        {selectedPlan.skill_recommendations?.length || 0}
+                        {selectedPlan.skillRecommendations?.length || 0}
                       </p>
                     </div>
                     
@@ -226,7 +368,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                       </div>
                       <h3 className="font-semibold text-gray-800">Learning Weeks</h3>
                       <p className="text-2xl font-bold text-orange-600">
-                        {selectedPlan.learning_plan?.length || 0}
+                        {selectedPlan.learningPlan?.length || 0}
                       </p>
                     </div>
                   </div>
@@ -240,7 +382,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                   </h3>
                   
                   <div className="grid md:grid-cols-2 gap-6">
-                    {selectedPlan.learning_plan?.map((week, index) => (
+                    {selectedPlan.learningPlan?.map((week, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center mb-3">
                           <div className="bg-primary-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3">
@@ -252,12 +394,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                         <div className="space-y-2">
                           {week.tasks?.map((task, taskIndex) => {
                             const taskId = `${index}-${taskIndex}`;
-                            const isCompleted = completedTasks.has(taskId);
+                            const isCompleted = userProgress[taskId] || false;
                             
                             return (
                               <button
                                 key={taskIndex}
-                                onClick={() => toggleTask(taskId)}
+                                onClick={() => toggleTask(taskId, !isCompleted)}
                                 className="flex items-start space-x-2 text-left w-full hover:bg-gray-50 p-2 rounded transition-colors"
                               >
                                 {isCompleted ? (
@@ -285,23 +427,23 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                   </h3>
                   
                   <div className="grid md:grid-cols-2 gap-6">
-                    {selectedPlan.career_recommendations?.map((career, index) => (
+                    {selectedPlan.careerRecommendations?.map((career, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <h4 className="font-semibold text-gray-800">{career.title}</h4>
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                            {career.match_percentage}% match
+                            {career.matchPercentage}% match
                           </span>
                         </div>
                         <p className="text-gray-600 text-sm mb-3">{career.description}</p>
                         <div className="text-sm text-gray-600">
                           <div className="flex items-center mb-1">
                             <span className="font-medium">Salary:</span>
-                            <span className="ml-2">{career.average_salary}</span>
+                            <span className="ml-2">{career.averageSalary}</span>
                           </div>
                           <div className="flex items-center">
                             <span className="font-medium">Growth:</span>
-                            <span className="ml-2">{career.growth_rate}</span>
+                            <span className="ml-2">{career.growthRate}</span>
                           </div>
                         </div>
                       </div>
@@ -321,7 +463,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onCreateNew, onSignOut }) =
                     className="btn-secondary flex items-center space-x-2"
                   >
                     <Plus className="h-5 w-5" />
-                    <span>Try Another Plan</span>
+                    <span>Create New Plan</span>
                   </button>
                   
                   <button className="btn-secondary flex items-center space-x-2">
