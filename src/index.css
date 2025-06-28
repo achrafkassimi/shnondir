@@ -40,4 +40,106 @@
   .input-field {
     @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 bg-white;
   }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .article-content {
+    @apply text-gray-800 leading-relaxed;
+  }
+
+  .article-content h1 {
+    @apply text-3xl font-bold text-gray-900 mb-6 mt-8;
+  }
+
+  .article-content h2 {
+    @apply text-2xl font-bold text-gray-900 mb-4 mt-6;
+  }
+
+  .article-content h3 {
+    @apply text-xl font-semibold text-gray-900 mb-3 mt-5;
+  }
+
+  .article-content h4 {
+    @apply text-lg font-semibold text-gray-900 mb-2 mt-4;
+  }
+
+  .article-content p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .article-content ul {
+    @apply mb-4 pl-6 space-y-2;
+  }
+
+  .article-content li {
+    @apply list-disc;
+  }
+
+  .article-content strong {
+    @apply font-semibold text-gray-900;
+  }
+
+  .article-content em {
+    @apply italic;
+  }
+
+  .article-content blockquote {
+    @apply border-l-4 border-primary-500 pl-4 italic text-gray-700 my-6;
+  }
+
+  .prose {
+    @apply max-w-none;
+  }
+
+  .prose h1 {
+    @apply text-3xl font-bold text-gray-900 mb-6 mt-8;
+  }
+
+  .prose h2 {
+    @apply text-2xl font-bold text-gray-900 mb-4 mt-6;
+  }
+
+  .prose h3 {
+    @apply text-xl font-semibold text-gray-900 mb-3 mt-5;
+  }
+
+  .prose h4 {
+    @apply text-lg font-semibold text-gray-900 mb-2 mt-4;
+  }
+
+  .prose p {
+    @apply mb-4 leading-relaxed text-gray-700;
+  }
+
+  .prose ul {
+    @apply mb-4 pl-6 space-y-2;
+  }
+
+  .prose li {
+    @apply list-disc text-gray-700;
+  }
+
+  .prose strong {
+    @apply font-semibold text-gray-900;
+  }
+
+  .prose em {
+    @apply italic;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-primary-500 pl-4 italic text-gray-700 my-6;
+  }
 }
