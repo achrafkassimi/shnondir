@@ -24,8 +24,7 @@ const Header: React.FC<HeaderProps> = ({
   const navigationItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'about', label: 'About', icon: Users },
-    { id: 'blog', label: 'Blog', icon: BookOpen },
-    { id: 'chat', label: 'AI Assistant', icon: MessageSquare }
+    { id: 'blog', label: 'Blog', icon: BookOpen }
   ];
 
   const handleNavigation = (pageId: string) => {
@@ -70,12 +69,13 @@ const Header: React.FC<HeaderProps> = ({
             {/* User Menu */}
             {user ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-gray-600">
+                <button
+                  onClick={() => handleNavigation('dashboard')}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-50"
+                >
                   <User className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {user.user_metadata?.name || user.email?.split('@')[0]}
-                  </span>
-                </div>
+                  <span className="text-sm font-medium">Dashboard</span>
+                </button>
                 <button 
                   onClick={onSignOut}
                   className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50"
@@ -129,12 +129,13 @@ const Header: React.FC<HeaderProps> = ({
               {/* Mobile User Menu */}
               {user ? (
                 <div className="space-y-2 pt-4 border-t border-gray-200">
-                  <div className="flex items-center space-x-3 px-3 py-2 text-gray-600">
+                  <button
+                    onClick={() => handleNavigation('dashboard')}
+                    className="flex items-center space-x-3 w-full px-3 py-3 text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors rounded-lg"
+                  >
                     <User className="h-5 w-5" />
-                    <span className="font-medium">
-                      {user.user_metadata?.name || user.email?.split('@')[0]}
-                    </span>
-                  </div>
+                    <span className="font-medium">Dashboard</span>
+                  </button>
                   <button 
                     onClick={onSignOut}
                     className="flex items-center space-x-3 w-full px-3 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors rounded-lg"

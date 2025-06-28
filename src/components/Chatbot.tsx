@@ -104,36 +104,59 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chatbot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: textToSend,
-          conversationId,
-          userId: user?.id
-        }),
-      });
+      // Try to use the backend chatbot function first
+      let response;
+      try {
+        response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chatbot`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: textToSend,
+            conversationId,
+            userId: user?.id
+          }),
+        });
 
-      if (!response.ok) throw new Error('Failed to get response');
+        if (!response.ok) throw new Error('Backend unavailable');
 
-      const data = await response.json();
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response,
-        timestamp: new Date(),
-        metadata: data.metadata
-      };
+        const data = await response.json();
+        
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.response,
+          timestamp: new Date(),
+          metadata: data.metadata
+        };
 
-      setMessages(prev => [...prev, assistantMessage]);
-      setConversationId(data.conversationId);
+        setMessages(prev => [...prev, assistantMessage]);
+        setConversationId(data.conversationId);
 
-      // Auto-speak response if voice is enabled
-      if (voiceEnabled && isVoiceEnabled()) {
-        speakMessage(data.response);
+        // Auto-speak response if voice is enabled
+        if (voiceEnabled && isVoiceEnabled()) {
+          speakMessage(data.response);
+        }
+      } catch (backendError) {
+        console.log('Backend unavailable, using fallback responses');
+        
+        // Fallback to local AI responses
+        const fallbackResponse = generateFallbackResponse(textToSend);
+        
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: fallbackResponse,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+
+        // Auto-speak response if voice is enabled
+        if (voiceEnabled && isVoiceEnabled()) {
+          speakMessage(fallbackResponse);
+        }
       }
 
     } catch (error) {
@@ -141,13 +164,45 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I apologize, but I'm having trouble connecting right now. Please try again in a moment, or feel free to explore CareerSpark's other features!",
+        content: "I apologize, but I'm having trouble connecting right now. However, I can still help you! Try asking me about career paths, skills to learn, or how to get started with CareerSpark's features.",
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const generateFallbackResponse = (message: string): string => {
+    const lowerMessage = message.toLowerCase();
+    
+    // Career planning responses
+    if (lowerMessage.includes('career') || lowerMessage.includes('job') || lowerMessage.includes('work')) {
+      return "Great question about careers! 🎯 CareerSpark can help you discover your perfect career path. Here's what I recommend:\n\n• **Take our assessment** - Click 'Start Your Journey' to get personalized recommendations\n• **Explore trending careers** - Software development, data science, and UX design are in high demand\n• **Consider your interests** - What activities make you lose track of time?\n\nWhat specific career area interests you most?";
+    }
+    
+    // Skills and learning
+    if (lowerMessage.includes('skill') || lowerMessage.includes('learn') || lowerMessage.includes('study')) {
+      return "Excellent! Continuous learning is key to career success. 📚 Here are some high-demand skills:\n\n**Tech Skills:**\n• JavaScript & Python programming\n• Data analysis & visualization\n• Digital marketing & SEO\n\n**Soft Skills:**\n• Communication & leadership\n• Problem-solving\n• Project management\n\nWhich area would you like to focus on? I can suggest specific learning resources!";
+    }
+    
+    // Getting started
+    if (lowerMessage.includes('start') || lowerMessage.includes('begin') || lowerMessage.includes('how')) {
+      return "Perfect! Let's get you started on your career journey! 🚀\n\n**Here's how CareerSpark works:**\n1. **Share your background** - Tell us about your education and interests\n2. **Get AI recommendations** - Receive 2-3 personalized career paths\n3. **Follow your plan** - Get a 4-week learning roadmap\n4. **Track progress** - Use our dashboard to stay motivated\n\nReady to begin? Click 'Start Your Journey' or tell me about your background right here!";
+    }
+    
+    // Greetings
+    if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+      return "Hello! 👋 Welcome to CareerSpark! I'm your AI career assistant, and I'm excited to help you discover your perfect career path.\n\n**I can help you with:**\n• Finding careers that match your interests\n• Creating personalized learning plans\n• Skill development recommendations\n• Job search strategies\n• CV and interview preparation\n\nWhat brings you here today? Are you exploring career options, looking to change careers, or wanting to develop new skills?";
+    }
+    
+    // CV and resume help
+    if (lowerMessage.includes('cv') || lowerMessage.includes('resume') || lowerMessage.includes('interview')) {
+      return "Great question about CVs and interviews! 📄 Here's how I can help:\n\n**CV Tips:**\n• Tailor your CV to each job application\n• Highlight relevant skills and achievements\n• Use action verbs and quantify results\n• Keep it concise (1-2 pages max)\n\n**Interview Prep:**\n• Research the company and role\n• Prepare STAR method examples\n• Practice common questions\n• Prepare thoughtful questions to ask\n\nWould you like specific advice for a particular career field?";
+    }
+    
+    // Default helpful response
+    return "Thanks for reaching out! 😊 I'm here to help with your career journey. While I might not have a specific answer to that question, I can definitely assist you with:\n\n🎯 **Career Exploration** - Discover paths that match your interests\n📚 **Skill Development** - Learn what skills to focus on\n💼 **Job Search Help** - Tips for applications and interviews\n🎓 **Education Guidance** - Whether to pursue further studies\n\nWhat specific aspect of your career would you like to explore? Or feel free to take our quick assessment to get personalized recommendations!";
   };
 
   const handleVoiceTranscript = (transcript: string) => {
