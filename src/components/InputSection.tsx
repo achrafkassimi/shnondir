@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
 import VoiceInput from './VoiceInput';
+import { isVoiceEnabled } from '../services/voiceService';
 
 interface InputSectionProps {
   onAnalyze: (profile: UserProfile) => void;
@@ -133,8 +134,10 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                     ? 'bg-white shadow-sm text-primary-600'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
+                disabled={!isVoiceEnabled()}
               >
                 <span>🎤 Voice Input</span>
+                {!isVoiceEnabled() && <span className="text-xs text-gray-400">(Requires setup)</span>}
               </button>
             </div>
           </div>
@@ -213,16 +216,6 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                     </motion.button>
                   </motion.div>
                 )}
-                
-                <div className="mt-8 text-sm text-gray-500">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="font-medium text-blue-800 mb-2">🎤 Voice Input Integration Ready!</p>
-                    <p className="text-blue-700">
-                      Voice recording is fully functional with ElevenLabs integration. 
-                      Add your API key to enable speech-to-text and text-to-speech features.
-                    </p>
-                  </div>
-                </div>
               </motion.div>
             ) : (
               <motion.form

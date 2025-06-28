@@ -37,7 +37,15 @@ const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 
 // Check if voice features are available
 export const isVoiceEnabled = (): boolean => {
-  return !!import.meta.env.VITE_ELEVENLABS_API_KEY;
+  // Check if we have the API key and the backend is available
+  const hasApiKey = !!import.meta.env.VITE_ELEVENLABS_API_KEY;
+  const hasSupabaseUrl = !!import.meta.env.VITE_SUPABASE_URL;
+  return hasApiKey && hasSupabaseUrl;
+};
+
+// Check if voice features are properly configured
+export const isVoiceConfigured = (): boolean => {
+  return isVoiceEnabled();
 };
 
 // Convert speech to text

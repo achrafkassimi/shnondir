@@ -66,7 +66,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
 
   const startRecording = async () => {
     if (!isVoiceEnabled()) {
-      setError('Voice features are not configured. Please set up ElevenLabs API key.');
+      setError('Voice features require ElevenLabs API configuration.');
       return;
     }
 
@@ -199,15 +199,16 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     return <Mic className="h-6 w-6" />;
   };
 
+  // Don't show the configuration message if voice is properly enabled
   if (!isVoiceEnabled()) {
     return (
-      <div className={`bg-blue-50 border border-blue-200 rounded-lg p-4 ${className}`}>
-        <div className="flex items-center space-x-2 text-blue-800">
-          <AlertCircle className="h-5 w-5" />
+      <div className={`bg-gray-100 border border-gray-300 rounded-lg p-4 ${className}`}>
+        <div className="flex items-center space-x-2 text-gray-600">
+          <Mic className="h-5 w-5" />
           <div>
-            <p className="font-medium">Voice Input Available</p>
-            <p className="text-sm text-blue-700">
-              To enable voice features, add your ElevenLabs API key to the environment variables.
+            <p className="font-medium">Voice Input</p>
+            <p className="text-sm">
+              Voice features require ElevenLabs API configuration. Using text input instead.
             </p>
           </div>
         </div>
