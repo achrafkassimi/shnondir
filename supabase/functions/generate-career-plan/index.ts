@@ -90,16 +90,22 @@ Deno.serve(async (req) => {
 
 function generateCareerRecommendations(profile: UserProfile, insights: any[]): CareerRecommendation[] {
   // Simple matching algorithm based on interests and education
-  const interestKeywords = profile.interests.map(i => i.toLowerCase())
+  const interestKeywords = (profile.interests || []).map(i => i.toLowerCase())
   
   const careerMatches = insights
+    .filter(insight => insight && insight.career_title) // Filter out null/undefined insights
     .map(insight => {
       let matchScore = 0
       
-      // Match based on interests
-      const careerKeywords = insight.career_title.toLowerCase().split(' ')
-      const skillKeywords = insight.required_skills.map((s: string) => s.toLowerCase())
+      // Safely handle career title
+      const careerTitle = insight.career_title || ''
+      const careerKeywords = careerTitle.toLowerCase().split(' ')
       
+      // Safely handle required skills
+      const requiredSkills = Array.isArray(insight.required_skills) ? insight.required_skills : []
+      const skillKeywords = requiredSkills.map((s: string) => (s || '').toLowerCase())
+      
+      // Match based on interests
       interestKeywords.forEach(interest => {
         if (careerKeywords.some((keyword: string) => keyword.includes(interest) || interest.includes(keyword))) {
           matchScore += 30
@@ -114,22 +120,61 @@ function generateCareerRecommendations(profile: UserProfile, insights: any[]): C
       if (insight.demand_level === 'high') matchScore += 10
       
       // Boost score for high growth careers
-      if (insight.growth_rate > 20) matchScore += 15
-      if (insight.growth_rate > 10) matchScore += 10
+      const growthRate = insight.growth_rate || 0
+      if (growthRate > 20) matchScore += 15
+      if (growthRate > 10) matchScore += 10
+      
+      // Safely handle salary values
+      const salaryMin = insight.salary_min || 30000
+      const salaryMax = insight.salary_max || 60000
       
       return {
-        title: insight.career_title,
+        title: careerTitle,
         description: generateCareerDescription(insight),
         matchPercentage: Math.min(95, Math.max(65, matchScore)),
-        averageSalary: `${Math.round(insight.salary_min / 1000)}k - ${Math.round(insight.salary_max / 1000)}k MAD`,
-        growthRate: `${insight.growth_rate}%`,
-        requiredSkills: insight.required_skills.slice(0, 6)
+        averageSalary: `${Math.round(salaryMin / 1000)}k - ${Math.round(salaryMax / 1000)}k MAD`,
+        growthRate: `${growthRate}%`,
+        requiredSkills: requiredSkills.slice(0, 6)
       }
     })
     .sort((a, b) => b.matchPercentage - a.matchPercentage)
     .slice(0, 3)
 
+  // If no matches found, return default recommendations
+  if (careerMatches.length === 0) {
+    return getDefaultCareerRecommendations()
+  }
+
   return careerMatches
+}
+
+function getDefaultCareerRecommendations(): CareerRecommendation[] {
+  return [
+    {
+      title: 'Software Developer',
+      description: 'Design, develop, and maintain software applications using modern programming languages and frameworks. Work on web applications, mobile apps, or enterprise systems.',
+      matchPercentage: 85,
+      averageSalary: '35k - 80k MAD',
+      growthRate: '15%',
+      requiredSkills: ['JavaScript', 'Python', 'React', 'SQL', 'Git', 'Problem Solving']
+    },
+    {
+      title: 'Digital Marketing Specialist',
+      description: 'Develop and execute digital marketing strategies across various online channels. Manage SEO, social media, content marketing, and analytics.',
+      matchPercentage: 80,
+      averageSalary: '25k - 60k MAD',
+      growthRate: '12%',
+      requiredSkills: ['SEO', 'Social Media', 'Google Analytics', 'Content Creation', 'Email Marketing', 'PPC']
+    },
+    {
+      title: 'Data Analyst',
+      description: 'Analyze complex datasets to extract insights and drive business decisions. Use statistical tools and data visualization to solve real-world problems.',
+      matchPercentage: 75,
+      averageSalary: '30k - 70k MAD',
+      growthRate: '18%',
+      requiredSkills: ['Excel', 'SQL', 'Python', 'Tableau', 'Statistics', 'Data Visualization']
+    }
+  ]
 }
 
 function generateCareerDescription(insight: any): string {
@@ -142,13 +187,18 @@ function generateCareerDescription(insight: any): string {
     'Cybersecurity Analyst': 'Protect organizations from cyber threats by monitoring security systems, investigating incidents, and implementing security measures.'
   }
   
-  return descriptions[insight.career_title] || `Work in ${insight.industry} focusing on ${insight.career_title.toLowerCase()} responsibilities with growth opportunities in Morocco.`
+  const careerTitle = insight.career_title || 'Professional'
+  const industry = insight.industry || 'technology'
+  
+  return descriptions[careerTitle] || `Work in ${industry} focusing on ${careerTitle.toLowerCase()} responsibilities with growth opportunities in Morocco.`
 }
 
 function generateSkillRecommendations(careers: CareerRecommendation[], resources: any[]) {
-  const allSkills = careers.flatMap(career => career.requiredSkills)
+  const allSkills = careers.flatMap(career => career.requiredSkills || [])
   const skillCounts = allSkills.reduce((acc: any, skill) => {
-    acc[skill] = (acc[skill] || 0) + 1
+    if (skill) {
+      acc[skill] = (acc[skill] || 0) + 1
+    }
     return acc
   }, {})
   
@@ -157,14 +207,22 @@ function generateSkillRecommendations(careers: CareerRecommendation[], resources
     .slice(0, 3)
     .map(([skill]) => skill)
   
+  // If no skills found, return default skills
+  if (topSkills.length === 0) {
+    return getDefaultSkillRecommendations()
+  }
+  
   return topSkills.map(skill => {
     const relatedResources = resources
-      .filter(resource => resource.skill_tags.some((tag: string) => 
-        tag.toLowerCase().includes(skill.toLowerCase()) || 
-        skill.toLowerCase().includes(tag.toLowerCase())
-      ))
+      .filter(resource => {
+        const skillTags = Array.isArray(resource.skill_tags) ? resource.skill_tags : []
+        return skillTags.some((tag: string) => 
+          (tag || '').toLowerCase().includes(skill.toLowerCase()) || 
+          skill.toLowerCase().includes((tag || '').toLowerCase())
+        )
+      })
       .slice(0, 3)
-      .map((resource: any) => resource.title)
+      .map((resource: any) => resource.title || 'Learning Resource')
     
     return {
       skill,
@@ -173,6 +231,29 @@ function generateSkillRecommendations(careers: CareerRecommendation[], resources
       resources: relatedResources.length > 0 ? relatedResources : [`${skill} Tutorial`, `${skill} Documentation`, `${skill} Course`]
     }
   })
+}
+
+function getDefaultSkillRecommendations() {
+  return [
+    {
+      skill: 'Communication',
+      importance: 'High',
+      timeToLearn: '1-2 months',
+      resources: ['Communication Skills Course', 'Public Speaking Tutorial', 'Writing Workshop']
+    },
+    {
+      skill: 'Problem Solving',
+      importance: 'High',
+      timeToLearn: '2-3 months',
+      resources: ['Critical Thinking Course', 'Logic Puzzles', 'Case Study Analysis']
+    },
+    {
+      skill: 'Digital Literacy',
+      importance: 'High',
+      timeToLearn: '1-2 months',
+      resources: ['Computer Basics', 'Internet Skills', 'Office Software Training']
+    }
+  ]
 }
 
 function generateLearningPlan(skills: any[], resources: any[]) {
@@ -186,7 +267,7 @@ function generateLearningPlan(skills: any[], resources: any[]) {
         'Join relevant communities',
         'Create learning schedule'
       ],
-      resources: resources.filter(r => r.difficulty_level === 'beginner').slice(0, 3).map(r => r.title)
+      resources: resources.filter(r => r.difficulty_level === 'beginner').slice(0, 3).map(r => r.title || 'Learning Resource')
     },
     {
       week: 2,
@@ -233,7 +314,10 @@ function getTimeToLearn(skill: string): string {
     'React': '2-3 months',
     'SQL': '1-2 months',
     'Figma': '2-4 weeks',
-    'Excel': '1-2 months'
+    'Excel': '1-2 months',
+    'Communication': '1-2 months',
+    'Problem Solving': '2-3 months',
+    'Digital Literacy': '1-2 months'
   }
   
   return timeMap[skill] || '2-4 months'
