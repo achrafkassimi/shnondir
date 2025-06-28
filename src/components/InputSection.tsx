@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Loader2, AlertCircle } from 'lucide-react';
 import { UserProfile } from '../types';
 import VoiceInput from './VoiceInput';
 import { isVoiceEnabled } from '../services/voiceService';
@@ -20,6 +20,8 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
     goals: ''
   });
   const [voiceTranscript, setVoiceTranscript] = useState('');
+
+  const voiceAvailable = isVoiceEnabled();
 
   const handleVoiceTranscript = (transcript: string) => {
     setVoiceTranscript(transcript);
@@ -128,22 +130,45 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                 <span>Text Input</span>
               </button>
               <button
-                onClick={() => setInputMode('voice')}
+                onClick={() => voiceAvailable && setInputMode('voice')}
+                disabled={!voiceAvailable}
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                  inputMode === 'voice'
+                  inputMode === 'voice' && voiceAvailable
                     ? 'bg-white shadow-sm text-primary-600'
-                    : 'text-gray-600 hover:text-gray-800'
+                    : voiceAvailable
+                    ? 'text-gray-600 hover:text-gray-800'
+                    : 'text-gray-400 cursor-not-allowed'
                 }`}
-                disabled={!isVoiceEnabled()}
+                title={!voiceAvailable ? 'Voice input requires ElevenLabs API configuration' : ''}
               >
                 <span>🎤 Voice Input</span>
-                {!isVoiceEnabled() && <span className="text-xs text-gray-400">(Requires setup)</span>}
+                {!voiceAvailable && (
+                  <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">
+                    Setup Required
+                  </span>
+                )}
               </button>
             </div>
           </div>
+
+          {/* Voice Setup Notice */}
+          {!voiceAvailable && (
+            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="text-blue-800 font-medium text-sm">Voice Input Available</h3>
+                  <p className="text-blue-700 text-sm mt-1">
+                    To enable voice features, configure your ElevenLabs API key in the environment settings. 
+                    For now, you can use the text input below.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           
           <AnimatePresence mode="wait">
-            {inputMode === 'voice' ? (
+            {inputMode === 'voice' && voiceAvailable ? (
               <motion.div
                 key="voice"
                 initial={{ opacity: 0, x: -20 }}
