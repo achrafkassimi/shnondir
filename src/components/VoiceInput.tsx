@@ -199,21 +199,10 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     return <Mic className="h-6 w-6" />;
   };
 
-  // Don't show the configuration message if voice is properly enabled
+  // If voice is not enabled, don't render the component at all
+  // The parent component will handle showing the appropriate message
   if (!isVoiceEnabled()) {
-    return (
-      <div className={`bg-gray-100 border border-gray-300 rounded-lg p-4 ${className}`}>
-        <div className="flex items-center space-x-2 text-gray-600">
-          <Mic className="h-5 w-5" />
-          <div>
-            <p className="font-medium">Voice Input</p>
-            <p className="text-sm">
-              Voice features require ElevenLabs API configuration. Using text input instead.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
