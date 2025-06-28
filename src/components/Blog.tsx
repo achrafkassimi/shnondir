@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar, 
   User, 
@@ -12,10 +12,16 @@ import {
   BookOpen,
   TrendingUp,
   Users,
-  Award
+  Award,
+  ArrowLeft,
+  Eye,
+  Heart,
+  Share2,
+  MessageCircle
 } from 'lucide-react';
 
 const Blog: React.FC = () => {
+  const [currentView, setCurrentView] = useState<'home' | 'success-stories' | 'featured-articles' | 'all-articles'>('home');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -37,7 +43,10 @@ const Blog: React.FC = () => {
       readTime: '8 min read',
       image: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
       featured: true,
-      video: true
+      video: true,
+      views: 2847,
+      likes: 156,
+      comments: 23
     },
     {
       id: 2,
@@ -48,7 +57,10 @@ const Blog: React.FC = () => {
       date: '2025-01-12',
       readTime: '12 min read',
       image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
-      featured: true
+      featured: true,
+      views: 1923,
+      likes: 89,
+      comments: 15
     },
     {
       id: 3,
@@ -59,7 +71,10 @@ const Blog: React.FC = () => {
       date: '2025-01-10',
       readTime: '10 min read',
       image: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=800',
-      featured: true
+      featured: true,
+      views: 3156,
+      likes: 201,
+      comments: 34
     }
   ];
 
@@ -74,7 +89,10 @@ const Blog: React.FC = () => {
       readTime: '6 min read',
       image: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400',
       video: true,
-      stats: { salary: '+150%', time: '8 months', satisfaction: '9.5/10' }
+      stats: { salary: '+150%', time: '8 months', satisfaction: '9.5/10' },
+      views: 1456,
+      likes: 78,
+      comments: 12
     },
     {
       id: 5,
@@ -86,7 +104,10 @@ const Blog: React.FC = () => {
       readTime: '7 min read',
       image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400',
       video: true,
-      stats: { salary: '+200%', time: '12 months', satisfaction: '10/10' }
+      stats: { salary: '+200%', time: '12 months', satisfaction: '10/10' },
+      views: 2134,
+      likes: 145,
+      comments: 28
     },
     {
       id: 6,
@@ -97,40 +118,94 @@ const Blog: React.FC = () => {
       date: '2025-01-03',
       readTime: '9 min read',
       image: 'https://images.pexels.com/photos/3184340/pexels-photo-3184340.jpeg?auto=compress&cs=tinysrgb&w=400',
-      stats: { salary: '+120%', time: '10 months', satisfaction: '9/10' }
+      stats: { salary: '+120%', time: '10 months', satisfaction: '9/10' },
+      views: 987,
+      likes: 56,
+      comments: 8
+    },
+    {
+      id: 7,
+      title: 'Engineering to Entrepreneurship: Karim\'s Startup Journey',
+      excerpt: 'How an electrical engineer built a successful e-commerce platform and scaled it to 6 figures.',
+      category: 'success-stories',
+      author: 'Maria Rodriguez',
+      date: '2024-12-30',
+      readTime: '11 min read',
+      image: 'https://images.pexels.com/photos/3184341/pexels-photo-3184341.jpeg?auto=compress&cs=tinysrgb&w=400',
+      stats: { salary: '+300%', time: '18 months', satisfaction: '10/10' },
+      views: 3421,
+      likes: 234,
+      comments: 45
+    },
+    {
+      id: 8,
+      title: 'From Accounting to Digital Marketing: Salma\'s Creative Switch',
+      excerpt: 'A certified accountant\'s journey to becoming a digital marketing manager at a leading agency.',
+      category: 'success-stories',
+      author: 'David Kim',
+      date: '2024-12-28',
+      readTime: '8 min read',
+      image: 'https://images.pexels.com/photos/3184342/pexels-photo-3184342.jpeg?auto=compress&cs=tinysrgb&w=400',
+      video: true,
+      stats: { salary: '+80%', time: '6 months', satisfaction: '9/10' },
+      views: 1678,
+      likes: 92,
+      comments: 16
     }
   ];
 
   const regularPosts = [
     {
-      id: 7,
+      id: 9,
       title: '10 Essential Skills Every Professional Needs in 2025',
       excerpt: 'The most in-demand skills across industries and how to develop them effectively.',
       category: 'career-tips',
       author: 'Maria Rodriguez',
       date: '2025-01-01',
       readTime: '5 min read',
-      image: 'https://images.pexels.com/photos/3184341/pexels-photo-3184341.jpeg?auto=compress&cs=tinysrgb&w=400'
+      image: 'https://images.pexels.com/photos/3184343/pexels-photo-3184343.jpeg?auto=compress&cs=tinysrgb&w=400',
+      views: 4567,
+      likes: 289,
+      comments: 67
     },
     {
-      id: 8,
+      id: 10,
       title: 'Remote Work Opportunities in the MENA Region',
       excerpt: 'How to find and secure remote positions with international companies.',
       category: 'industry-insights',
       author: 'David Kim',
       date: '2024-12-28',
       readTime: '8 min read',
-      image: 'https://images.pexels.com/photos/3184342/pexels-photo-3184342.jpeg?auto=compress&cs=tinysrgb&w=400'
+      image: 'https://images.pexels.com/photos/3184344/pexels-photo-3184344.jpeg?auto=compress&cs=tinysrgb&w=400',
+      views: 2345,
+      likes: 134,
+      comments: 29
     },
     {
-      id: 9,
+      id: 11,
       title: 'Networking Strategies for Introverted Professionals',
       excerpt: 'Practical tips for building professional relationships when you prefer smaller interactions.',
       category: 'career-tips',
       author: 'Sarah Chen',
       date: '2024-12-25',
       readTime: '6 min read',
-      image: 'https://images.pexels.com/photos/3184343/pexels-photo-3184343.jpeg?auto=compress&cs=tinysrgb&w=400'
+      image: 'https://images.pexels.com/photos/3184345/pexels-photo-3184345.jpeg?auto=compress&cs=tinysrgb&w=400',
+      views: 1876,
+      likes: 98,
+      comments: 21
+    },
+    {
+      id: 12,
+      title: 'The Future of AI in Career Development',
+      excerpt: 'How artificial intelligence is transforming career guidance and job matching.',
+      category: 'industry-insights',
+      author: 'Ahmed Benali',
+      date: '2024-12-22',
+      readTime: '7 min read',
+      image: 'https://images.pexels.com/photos/3184346/pexels-photo-3184346.jpeg?auto=compress&cs=tinysrgb&w=400',
+      views: 3245,
+      likes: 187,
+      comments: 43
     }
   ];
 
@@ -138,13 +213,18 @@ const Blog: React.FC = () => {
 
   const filteredPosts = allPosts.filter(post => {
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || 
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  return (
-    <div className="min-h-screen bg-white">
+  const getPostsByCategory = (category: string) => {
+    return allPosts.filter(post => post.category === category);
+  };
+
+  const renderBlogHome = () => (
+    <>
       {/* Hero Section */}
       <section className="relative py-20 bg-gradient-to-br from-primary-50 to-secondary-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -160,6 +240,28 @@ const Blog: React.FC = () => {
               Real stories from real people who transformed their careers, plus expert insights 
               to help you navigate your own professional journey.
             </p>
+            
+            {/* Quick Navigation */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <button
+                onClick={() => setCurrentView('success-stories')}
+                className="bg-white hover:bg-gray-50 text-gray-800 font-medium px-6 py-3 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md"
+              >
+                📖 Success Stories
+              </button>
+              <button
+                onClick={() => setCurrentView('featured-articles')}
+                className="bg-white hover:bg-gray-50 text-gray-800 font-medium px-6 py-3 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md"
+              >
+                ⭐ Featured Articles
+              </button>
+              <button
+                onClick={() => setCurrentView('all-articles')}
+                className="bg-white hover:bg-gray-50 text-gray-800 font-medium px-6 py-3 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md"
+              >
+                📚 All Articles
+              </button>
+            </div>
             
             {/* Search and Filter */}
             <div className="max-w-2xl mx-auto">
@@ -217,7 +319,6 @@ const Blog: React.FC = () => {
                 <Play className="h-16 w-16" />
               </motion.button>
               
-              {/* Video Thumbnail */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-secondary-500/20"></div>
               <img
                 src="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1200"
@@ -225,7 +326,6 @@ const Blog: React.FC = () => {
                 className="absolute inset-0 w-full h-full object-cover opacity-60"
               />
               
-              {/* Video Info Overlay */}
               <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm rounded-lg p-4">
                 <h3 className="font-semibold text-gray-800">Youssef's Journey to Tech</h3>
                 <p className="text-sm text-gray-600">From Business Student to Software Engineer</p>
@@ -233,6 +333,10 @@ const Blog: React.FC = () => {
                   <span className="flex items-center space-x-1">
                     <Clock className="h-3 w-3" />
                     <span>12:34</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <Eye className="h-3 w-3" />
+                    <span>2.8k views</span>
                   </span>
                   <span className="flex items-center space-x-1">
                     <Star className="h-3 w-3" />
@@ -245,19 +349,168 @@ const Blog: React.FC = () => {
         </div>
       </section>
 
-      {/* Success Stories Grid */}
+      {/* Quick Access Sections */}
       <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Success Stories Preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-white rounded-2xl p-8 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-800">Success Stories</h3>
+                <button
+                  onClick={() => setCurrentView('success-stories')}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                >
+                  View All →
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {successStories.slice(0, 3).map((story, index) => (
+                  <div key={story.id} className="flex items-start space-x-3">
+                    <img
+                      src={story.image}
+                      alt={story.title}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-800 text-sm line-clamp-2">
+                        {story.title}
+                      </h4>
+                      <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                        <span>{story.readTime}</span>
+                        <span>•</span>
+                        <span>{story.views} views</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Featured Articles Preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-2xl p-8 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-800">Featured Articles</h3>
+                <button
+                  onClick={() => setCurrentView('featured-articles')}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                >
+                  View All →
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {featuredPosts.map((post, index) => (
+                  <div key={post.id} className="flex items-start space-x-3">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-800 text-sm line-clamp-2">
+                        {post.title}
+                      </h4>
+                      <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                        <span>{post.readTime}</span>
+                        <span>•</span>
+                        <span>{post.views} views</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Latest Articles Preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl p-8 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-800">Latest Articles</h3>
+                <button
+                  onClick={() => setCurrentView('all-articles')}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                >
+                  View All →
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {regularPosts.slice(0, 3).map((post, index) => (
+                  <div key={post.id} className="flex items-start space-x-3">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-16 h-16 rounded-lg object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-800 text-sm line-clamp-2">
+                        {post.title}
+                      </h4>
+                      <div className="flex items-center space-x-2 mt-1 text-xs text-gray-500">
+                        <span>{post.readTime}</span>
+                        <span>•</span>
+                        <span>{post.views} views</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+
+  const renderSuccessStories = () => (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <section className="py-16 bg-gradient-to-br from-green-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
           >
-            <h2 className="text-3xl font-bold gradient-text mb-4">Success Stories</h2>
-            <p className="text-gray-600 text-lg">Real transformations from our community</p>
+            <button
+              onClick={() => setCurrentView('home')}
+              className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Blog</span>
+            </button>
+            
+            <h1 className="text-4xl sm:text-5xl font-bold gradient-text mb-6">
+              Success Stories
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Real transformations from our community. Get inspired by these incredible career journeys.
+            </p>
           </motion.div>
+        </div>
+      </section>
 
+      {/* Success Stories Grid */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {successStories.map((story, index) => (
               <motion.article
@@ -310,41 +563,81 @@ const Blog: React.FC = () => {
                   )}
                   
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4" />
-                      <span>{story.author}</span>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <User className="h-4 w-4" />
+                        <span>{story.author}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{story.readTime}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{new Date(story.date).toLocaleDateString()}</span>
-                    </div>
+                    <span>{new Date(story.date).toLocaleDateString()}</span>
                   </div>
-                  
-                  <button className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
-                    <span>Read Full Story</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span className="flex items-center space-x-1">
+                        <Eye className="h-4 w-4" />
+                        <span>{story.views}</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <Heart className="h-4 w-4" />
+                        <span>{story.likes}</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <MessageCircle className="h-4 w-4" />
+                        <span>{story.comments}</span>
+                      </span>
+                    </div>
+                    
+                    <button className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
+                      <span>Read Story</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.article>
             ))}
           </div>
         </div>
       </section>
+    </div>
+  );
 
-      {/* Featured Articles */}
-      <section className="py-16 bg-white">
+  const renderFeaturedArticles = () => (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <section className="py-16 bg-gradient-to-br from-purple-50 to-pink-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
           >
-            <h2 className="text-3xl font-bold gradient-text mb-4">Featured Articles</h2>
-            <p className="text-gray-600 text-lg">Expert insights and career guidance</p>
+            <button
+              onClick={() => setCurrentView('home')}
+              className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Blog</span>
+            </button>
+            
+            <h1 className="text-4xl sm:text-5xl font-bold gradient-text mb-6">
+              Featured Articles
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Our most popular and impactful career guidance articles, handpicked by our experts.
+            </p>
           </motion.div>
+        </div>
+      </section>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+      {/* Featured Articles Grid */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-8">
             {featuredPosts.map((post, index) => (
               <motion.article
                 key={post.id}
@@ -358,13 +651,11 @@ const Blog: React.FC = () => {
                   <img
                     src={post.image}
                     alt={post.title}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  {post.featured && (
-                    <div className="absolute top-4 left-4 bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Featured
-                    </div>
-                  )}
+                  <div className="absolute top-4 left-4 bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Featured
+                  </div>
                   {post.video && (
                     <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-full">
                       <Play className="h-4 w-4 text-primary-600" />
@@ -372,19 +663,19 @@ const Blog: React.FC = () => {
                   )}
                 </div>
                 
-                <div className="p-6">
-                  <div className="flex items-center space-x-2 mb-3">
+                <div className="p-8">
+                  <div className="flex items-center space-x-2 mb-4">
                     <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
                       {categories.find(c => c.id === post.category)?.label}
                     </span>
                   </div>
                   
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3 group-hover:text-primary-600 transition-colors">
+                  <h3 className="text-2xl font-semibold text-gray-800 mb-4 group-hover:text-primary-600 transition-colors">
                     {post.title}
                   </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
+                  <p className="text-gray-600 mb-6 leading-relaxed">{post.excerpt}</p>
                   
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <User className="h-4 w-4" />
@@ -397,33 +688,104 @@ const Blog: React.FC = () => {
                     </div>
                     <span>{new Date(post.date).toLocaleDateString()}</span>
                   </div>
-                  
-                  <button className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
-                    <span>Read Article</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span className="flex items-center space-x-1">
+                        <Eye className="h-4 w-4" />
+                        <span>{post.views}</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <Heart className="h-4 w-4" />
+                        <span>{post.likes}</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <MessageCircle className="h-4 w-4" />
+                        <span>{post.comments}</span>
+                      </span>
+                    </div>
+                    
+                    <button className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
+                      <span>Read Article</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </motion.article>
             ))}
           </div>
         </div>
       </section>
+    </div>
+  );
 
-      {/* All Posts */}
-      <section className="py-16 bg-gray-50">
+  const renderAllArticles = () => (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <section className="py-16 bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
           >
-            <h2 className="text-3xl font-bold gradient-text mb-4">All Articles</h2>
+            <button
+              onClick={() => setCurrentView('home')}
+              className="inline-flex items-center space-x-2 text-primary-600 hover:text-primary-700 mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Blog</span>
+            </button>
+            
+            <h1 className="text-4xl sm:text-5xl font-bold gradient-text mb-6">
+              All Articles
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+              Explore our complete collection of career guidance articles, tips, and insights.
+            </p>
+
+            {/* Search and Filter */}
+            <div className="max-w-2xl mx-auto">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search articles..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="pl-10 pr-8 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent appearance-none bg-white"
+                  >
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.label} ({category.count})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Articles Grid */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
             <p className="text-gray-600 text-lg">
               {filteredPosts.length} articles found
               {selectedCategory !== 'all' && ` in ${categories.find(c => c.id === selectedCategory)?.label}`}
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPosts.map((post, index) => (
@@ -439,30 +801,56 @@ const Blog: React.FC = () => {
                   <img
                     src={post.image}
                     alt={post.title}
-                    className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {post.video && (
                     <div className="absolute top-3 right-3 bg-white/90 p-1.5 rounded-full">
                       <Play className="h-3 w-3 text-primary-600" />
                     </div>
                   )}
+                  {post.featured && (
+                    <div className="absolute top-3 left-3 bg-primary-500 text-white px-2 py-1 rounded text-xs font-medium">
+                      Featured
+                    </div>
+                  )}
                 </div>
                 
-                <div className="p-5">
-                  <div className="flex items-center space-x-2 mb-2">
+                <div className="p-6">
+                  <div className="flex items-center space-x-2 mb-3">
                     <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
                       {categories.find(c => c.id === post.category)?.label}
                     </span>
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-primary-600 transition-colors line-clamp-2">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3 group-hover:text-primary-600 transition-colors line-clamp-2">
                     {post.title}
                   </h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.excerpt}</p>
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.excerpt}</p>
                   
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{post.author}</span>
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span>{post.author}</span>
+                      <span>•</span>
+                      <span>{post.readTime}</span>
+                    </div>
                     <span>{new Date(post.date).toLocaleDateString()}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3 text-xs text-gray-500">
+                      <span className="flex items-center space-x-1">
+                        <Eye className="h-3 w-3" />
+                        <span>{post.views}</span>
+                      </span>
+                      <span className="flex items-center space-x-1">
+                        <Heart className="h-3 w-3" />
+                        <span>{post.likes}</span>
+                      </span>
+                    </div>
+                    
+                    <button className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">
+                      Read →
+                    </button>
                   </div>
                 </div>
               </motion.article>
@@ -478,37 +866,93 @@ const Blog: React.FC = () => {
           )}
         </div>
       </section>
+    </div>
+  );
 
-      {/* Newsletter Signup */}
-      <section className="py-16 bg-gradient-to-r from-primary-500 to-secondary-500">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+  return (
+    <div className="min-h-screen bg-white">
+      <AnimatePresence mode="wait">
+        {currentView === 'home' && (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            key="blog-home"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Stay Updated with Career Insights
-            </h2>
-            <p className="text-xl text-white/90 mb-8">
-              Get the latest success stories, career tips, and industry insights delivered to your inbox
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-white/50"
-              />
-              <button className="bg-white text-primary-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">
-                Subscribe
-              </button>
-            </div>
-            <p className="text-white/70 text-sm mt-4">
-              Join 5,000+ professionals. Unsubscribe anytime.
-            </p>
+            {renderBlogHome()}
           </motion.div>
-        </div>
-      </section>
+        )}
+
+        {currentView === 'success-stories' && (
+          <motion.div
+            key="success-stories"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderSuccessStories()}
+          </motion.div>
+        )}
+
+        {currentView === 'featured-articles' && (
+          <motion.div
+            key="featured-articles"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderFeaturedArticles()}
+          </motion.div>
+        )}
+
+        {currentView === 'all-articles' && (
+          <motion.div
+            key="all-articles"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderAllArticles()}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Newsletter Signup - Only show on home view */}
+      {currentView === 'home' && (
+        <section className="py-16 bg-gradient-to-r from-primary-500 to-secondary-500">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl font-bold text-white mb-4">
+                Stay Updated with Career Insights
+              </h2>
+              <p className="text-xl text-white/90 mb-8">
+                Get the latest success stories, career tips, and industry insights delivered to your inbox
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-3 rounded-xl border-0 focus:ring-2 focus:ring-white/50"
+                />
+                <button className="bg-white text-primary-600 font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors">
+                  Subscribe
+                </button>
+              </div>
+              <p className="text-white/70 text-sm mt-4">
+                Join 5,000+ professionals. Unsubscribe anytime.
+              </p>
+            </motion.div>
+          </div>
+        </section>
+      )}
     </div>
   );
 };
