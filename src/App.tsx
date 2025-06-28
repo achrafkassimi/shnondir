@@ -9,6 +9,7 @@ import InputSection from './components/InputSection';
 import ResultsSection from './components/ResultsSection';
 import Dashboard from './components/Dashboard';
 import AuthModal from './components/AuthModal';
+import Chatbot from './components/Chatbot';
 import Footer from './components/Footer';
 import { UserProfile, CareerPlan } from './types';
 import { supabase } from './lib/supabase';
@@ -138,11 +139,14 @@ function App() {
 
   if (currentStep === 'dashboard' && user) {
     return (
-      <Dashboard 
-        user={user} 
-        onCreateNew={handleCreateNew}
-        onSignOut={handleSignOut}
-      />
+      <>
+        <Dashboard 
+          user={user} 
+          onCreateNew={handleCreateNew}
+          onSignOut={handleSignOut}
+        />
+        <Chatbot user={user} />
+      </>
     );
   }
 
@@ -205,6 +209,8 @@ function App() {
         onClose={() => setShowAuthModal(false)}
         onAuthSuccess={handleAuthSuccess}
       />
+      
+      <Chatbot user={user} />
     </div>
   );
 }
