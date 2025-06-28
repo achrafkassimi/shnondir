@@ -8,6 +8,9 @@ import AnalyticsSection from './components/AnalyticsSection';
 import InputSection from './components/InputSection';
 import ResultsSection from './components/ResultsSection';
 import Dashboard from './components/Dashboard';
+import UserHome from './components/UserHome';
+import About from './components/About';
+import Blog from './components/Blog';
 import AuthModal from './components/AuthModal';
 import Chatbot from './components/Chatbot';
 import Footer from './components/Footer';
@@ -17,7 +20,7 @@ import { saveCareerPlan } from './services/careerService';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'landing' | 'input' | 'results' | 'dashboard'>('landing');
+  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'blog' | 'input' | 'results' | 'dashboard' | 'user-home'>('home');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [careerPlan, setCareerPlan] = useState<CareerPlan | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -29,7 +32,7 @@ function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        setCurrentStep('dashboard');
+        setCurrentPage('user-home');
       }
       setLoading(false);
     });
@@ -38,9 +41,9 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        setCurrentStep('dashboard');
+        setCurrentPage('user-home');
       } else {
-        setCurrentStep('landing');
+        setCurrentPage('home');
       }
     });
 
@@ -49,7 +52,7 @@ function App() {
 
   const handleGetStarted = () => {
     if (user) {
-      setCurrentStep('input');
+      setCurrentPage('input');
     } else {
       setShowAuthModal(true);
     }
@@ -89,14 +92,7 @@ function App() {
         setCareerPlan(newCareerPlan);
       }
       
-      setCurrentStep('results');
-      
-      // Scroll to results
-      setTimeout(() => {
-        document.getElementById('results-section')?.scrollIntoView({ 
-          behavior: 'smooth' 
-        });
-      }, 100);
+      setCurrentPage('results');
     } catch (error) {
       console.error('Error analyzing profile:', error);
       alert('There was an error analyzing your profile. Please try again.');
@@ -107,23 +103,23 @@ function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setCurrentStep('landing');
+    setCurrentPage('home');
     setCareerPlan(null);
   };
 
   const handleCreateNew = () => {
-    setCurrentStep('input');
+    setCurrentPage('input');
     setCareerPlan(null);
-    setTimeout(() => {
-      document.getElementById('input-section')?.scrollIntoView({ 
-        behavior: 'smooth' 
-      });
-    }, 100);
   };
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     // User state will be updated by the auth listener
+  };
+
+  const handleNavigation = (page: string) => {
+    setCurrentPage(page as any);
+    setIsMenuOpen(false);
   };
 
   if (loading) {
@@ -137,7 +133,8 @@ function App() {
     );
   }
 
-  if (currentStep === 'dashboard' && user) {
+  // Dashboard view for authenticated users
+  if (currentPage === 'dashboard' && user) {
     return (
       <>
         <Dashboard 
@@ -150,6 +147,32 @@ function App() {
     );
   }
 
+  // User home view for authenticated users
+  if (currentPage === 'user-home' && user) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header 
+          isMenuOpen={isMenuOpen} 
+          setIsMenuOpen={setIsMenuOpen}
+          user={user}
+          onSignOut={handleSignOut}
+          onAuthClick={() => setShowAuthModal(true)}
+          currentPage={currentPage}
+          onNavigate={handleNavigation}
+        />
+        <div className="pt-16">
+          <UserHome 
+            user={user}
+            onCreateNew={handleCreateNew}
+            onViewDashboard={() => setCurrentPage('dashboard')}
+          />
+        </div>
+        <Footer />
+        <Chatbot user={user} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -158,13 +181,15 @@ function App() {
         user={user}
         onSignOut={handleSignOut}
         onAuthClick={() => setShowAuthModal(true)}
+        currentPage={currentPage}
+        onNavigate={handleNavigation}
       />
       
       <main>
         <AnimatePresence mode="wait">
-          {currentStep === 'landing' && (
+          {currentPage === 'home' && (
             <motion.div
-              key="landing"
+              key="home"
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
@@ -175,31 +200,64 @@ function App() {
               <AnalyticsSection />
             </motion.div>
           )}
-        </AnimatePresence>
-        
-        {(currentStep === 'input' || currentStep === 'results') && (
-          <div className="pt-16">
-            <div id="input-section">
+
+          {currentPage === 'about' && (
+            <motion.div
+              key="about"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="pt-16"
+            >
+              <About />
+            </motion.div>
+          )}
+
+          {currentPage === 'blog' && (
+            <motion.div
+              key="blog"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="pt-16"
+            >
+              <Blog />
+            </motion.div>
+          )}
+
+          {currentPage === 'input' && (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="pt-16"
+            >
               <InputSection onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
-            </div>
-            
-            {currentStep === 'results' && careerPlan && (
-              <motion.div
-                id="results-section"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <ResultsSection 
-                  careerPlan={careerPlan} 
-                  onTryAnother={handleCreateNew}
-                  user={user}
-                  onSavePlan={() => setShowAuthModal(true)}
-                />
-              </motion.div>
-            )}
-          </div>
-        )}
+            </motion.div>
+          )}
+
+          {currentPage === 'results' && careerPlan && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              transition={{ duration: 0.8 }}
+              className="pt-16"
+            >
+              <ResultsSection 
+                careerPlan={careerPlan} 
+                onTryAnother={handleCreateNew}
+                user={user}
+                onSavePlan={() => setShowAuthModal(true)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
       
       <Footer />
