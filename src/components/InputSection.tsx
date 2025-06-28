@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, MessageSquare, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
+import VoiceInput from './VoiceInput';
 
 interface InputSectionProps {
   onAnalyze: (profile: UserProfile) => void;
@@ -10,7 +11,6 @@ interface InputSectionProps {
 
 const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) => {
   const [inputMode, setInputMode] = useState<'text' | 'voice'>('text');
-  const [isRecording, setIsRecording] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     educationLevel: '',
@@ -18,15 +18,54 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
     experience: '',
     goals: ''
   });
+  const [voiceTranscript, setVoiceTranscript] = useState('');
 
-  const handleVoiceToggle = () => {
-    if (isRecording) {
-      setIsRecording(false);
-      // Stop recording logic here
-    } else {
-      setIsRecording(true);
-      // Start recording logic here
+  const handleVoiceTranscript = (transcript: string) => {
+    setVoiceTranscript(transcript);
+    
+    // Auto-parse voice input into form fields
+    parseVoiceInput(transcript);
+  };
+
+  const parseVoiceInput = (transcript: string) => {
+    // Simple parsing logic - in production, this would use more sophisticated NLP
+    const lowerTranscript = transcript.toLowerCase();
+    
+    // Extract name if mentioned
+    const nameMatch = lowerTranscript.match(/my name is (\w+)|i'm (\w+)|i am (\w+)/);
+    if (nameMatch) {
+      const name = nameMatch[1] || nameMatch[2] || nameMatch[3];
+      setFormData(prev => ({ ...prev, name: name.charAt(0).toUpperCase() + name.slice(1) }));
     }
+    
+    // Extract education level
+    if (lowerTranscript.includes('bachelor') || lowerTranscript.includes('university')) {
+      setFormData(prev => ({ ...prev, educationLevel: 'bachelor' }));
+    } else if (lowerTranscript.includes('master')) {
+      setFormData(prev => ({ ...prev, educationLevel: 'master' }));
+    } else if (lowerTranscript.includes('high school')) {
+      setFormData(prev => ({ ...prev, educationLevel: 'high-school' }));
+    }
+    
+    // Extract interests
+    const interestKeywords = ['interested in', 'passionate about', 'love', 'enjoy', 'like'];
+    for (const keyword of interestKeywords) {
+      if (lowerTranscript.includes(keyword)) {
+        const afterKeyword = lowerTranscript.split(keyword)[1];
+        if (afterKeyword) {
+          const interests = afterKeyword.split(/[,.]/).slice(0, 3).join(', ').trim();
+          setFormData(prev => ({ ...prev, interests }));
+          break;
+        }
+      }
+    }
+    
+    // Set the full transcript as experience/goals
+    setFormData(prev => ({ 
+      ...prev, 
+      experience: transcript,
+      goals: transcript 
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,9 +74,23 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
     const profile: UserProfile = {
       name: formData.name,
       educationLevel: formData.educationLevel,
-      interests: formData.interests.split(',').map(i => i.trim()),
+      interests: formData.interests.split(',').map(i => i.trim()).filter(Boolean),
       experience: formData.experience,
       goals: formData.goals
+    };
+    
+    onAnalyze(profile);
+  };
+
+  const handleVoiceSubmit = () => {
+    if (!voiceTranscript.trim()) return;
+    
+    const profile: UserProfile = {
+      name: formData.name || 'User',
+      educationLevel: formData.educationLevel || 'bachelor',
+      interests: formData.interests ? formData.interests.split(',').map(i => i.trim()) : ['technology'],
+      experience: voiceTranscript,
+      goals: voiceTranscript
     };
     
     onAnalyze(profile);
@@ -81,8 +134,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
-                <Mic className="h-5 w-5" />
-                <span>Voice Input</span>
+                <span>🎤 Voice Input</span>
               </button>
             </div>
           </div>
@@ -96,62 +148,78 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                 exit={{ opacity: 0, x: 20 }}
                 className="text-center py-12"
               >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleVoiceToggle}
-                  className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isRecording
-                      ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200'
-                      : 'bg-primary-500 hover:bg-primary-600 shadow-lg shadow-primary-200'
-                  }`}
-                >
-                  {isRecording ? (
-                    <MicOff className="h-12 w-12 text-white" />
-                  ) : (
-                    <Mic className="h-12 w-12 text-white" />
-                  )}
-                </motion.button>
+                <VoiceInput
+                  onTranscript={handleVoiceTranscript}
+                  placeholder="Click to tell us about your career goals"
+                  className="mb-8"
+                />
                 
-                <div className="mt-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    {isRecording ? 'Recording...' : 'Ready to Listen'}
-                  </h3>
-                  <p className="text-gray-600">
-                    {isRecording 
-                      ? 'Tell us about your education, interests, experience, and career goals'
-                      : 'Click the microphone to start recording your career story'
-                    }
-                  </p>
-                  
-                  {isRecording && (
-                    <div className="flex justify-center mt-4">
-                      <div className="flex space-x-1">
-                        {[...Array(4)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            className="w-2 h-8 bg-primary-500 rounded-full"
-                            animate={{
-                              scaleY: [0.5, 1, 0.5],
-                            }}
-                            transition={{
-                              duration: 1,
-                              repeat: Infinity,
-                              delay: i * 0.2,
-                            }}
-                          />
-                        ))}
-                      </div>
+                {voiceTranscript && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-8"
+                  >
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                      <h3 className="font-semibold text-blue-800 mb-2">What we heard:</h3>
+                      <p className="text-blue-700">{voiceTranscript}</p>
                     </div>
-                  )}
-                </div>
+                    
+                    {/* Auto-parsed fields preview */}
+                    {(formData.name || formData.educationLevel || formData.interests) && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                        <h3 className="font-semibold text-green-800 mb-3">Auto-detected information:</h3>
+                        <div className="grid md:grid-cols-3 gap-4 text-sm">
+                          {formData.name && (
+                            <div>
+                              <span className="font-medium text-green-700">Name:</span>
+                              <p className="text-green-600">{formData.name}</p>
+                            </div>
+                          )}
+                          {formData.educationLevel && (
+                            <div>
+                              <span className="font-medium text-green-700">Education:</span>
+                              <p className="text-green-600">{formData.educationLevel}</p>
+                            </div>
+                          )}
+                          {formData.interests && (
+                            <div>
+                              <span className="font-medium text-green-700">Interests:</span>
+                              <p className="text-green-600">{formData.interests}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleVoiceSubmit}
+                      disabled={isAnalyzing}
+                      className="btn-primary flex items-center justify-center space-x-2 py-4 px-8"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Analyzing Your Profile...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-5 w-5" />
+                          <span>Get My Career Recommendations</span>
+                        </>
+                      )}
+                    </motion.button>
+                  </motion.div>
+                )}
                 
                 <div className="mt-8 text-sm text-gray-500">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="font-medium text-blue-800 mb-2">Voice Input Integration Note:</p>
+                    <p className="font-medium text-blue-800 mb-2">🎤 Voice Input Integration Ready!</p>
                     <p className="text-blue-700">
-                      To enable voice recording, you'll need to set up the ElevenLabs API. 
-                      The interface is ready - just add your API credentials!
+                      Voice recording is fully functional with ElevenLabs integration. 
+                      Add your API key to enable speech-to-text and text-to-speech features.
                     </p>
                   </div>
                 </div>

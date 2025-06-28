@@ -11,14 +11,15 @@ CareerSpark is a comprehensive web application that helps students and professio
 - **4-Week Learning Plans**: Structured roadmaps to get started in your chosen field
 - **Custom CV Templates**: Professional templates tailored to your target career
 - **Video Coaching**: Personalized video explanations powered by Tavus
+- **AI Chatbot**: 24/7 career guidance and support
 - **User Dashboard**: Save plans, track progress, and manage your career journey
 - **Analytics & Insights**: View trending career paths and regional opportunities
 
 ## 🚀 Tech Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS, Framer Motion
-- **Backend**: Supabase (Database, Authentication, Real-time)
-- **AI Integration**: Ready for ElevenLabs (Voice) and Tavus (Video)
+- **Backend**: Supabase (Database, Authentication, Real-time, Edge Functions)
+- **AI Integration**: ElevenLabs (Voice I/O), Tavus (Video), Custom AI Logic
 - **Deployment**: Netlify
 - **Icons**: Lucide React
 
@@ -28,8 +29,8 @@ CareerSpark is a comprehensive web application that helps students and professio
 
 - Node.js 18+ and npm
 - Supabase account
-- ElevenLabs API key (optional, for voice features)
-- Tavus API key (optional, for video coaching)
+- ElevenLabs API key (for voice features)
+- Tavus API key (for video coaching)
 
 ### Installation
 
@@ -59,13 +60,34 @@ CareerSpark is a comprehensive web application that helps students and professio
 
 4. **Set up Supabase**
    - Create a new Supabase project
-   - Run the migration file in `supabase/migrations/create_career_plans_table.sql`
+   - Run the migration files in `supabase/migrations/`
    - Enable email authentication in Supabase Auth settings
+   - Deploy edge functions to Supabase
 
 5. **Start the development server**
    ```bash
    npm run dev
    ```
+
+## 🎤 Voice Integration Features
+
+### ElevenLabs Integration
+- **Speech-to-Text**: Convert user voice input to text
+- **Text-to-Speech**: Generate natural voice responses
+- **Voice Activity Detection**: Smart recording with noise detection
+- **Multiple Voice Options**: Choose from various AI voices
+- **Real-time Processing**: Fast voice processing with fallbacks
+
+### Voice Features Available:
+- **Career Assessment**: Speak your background and goals
+- **Chatbot Conversations**: Voice chat with AI assistant
+- **Response Playback**: Listen to AI responses
+- **Voice Settings**: Customize voice quality and language
+
+### Setup Voice Features:
+1. Get ElevenLabs API key from [ElevenLabs](https://elevenlabs.io)
+2. Add to environment variables
+3. Voice features automatically activate when API key is present
 
 ## 📱 User Journey
 
@@ -83,14 +105,27 @@ CareerSpark is a comprehensive web application that helps students and professio
 - Protected routes and user session management
 
 ### Career Analysis
-- Mock AI analysis (ready for real AI integration)
-- Personalized career path matching
+- AI-powered career path matching
 - Skill gap analysis and recommendations
+- Personalized learning plan generation
+
+### AI Chatbot
+- 24/7 career guidance and support
+- Context-aware conversations
+- Voice input/output capabilities
+- Knowledge base with 15+ career topics
 
 ### Dashboard Features
 - Multiple career plan management
 - Progress tracking with interactive checklists
 - Plan sharing and export capabilities
+- Analytics and insights
+
+### Voice Integration
+- ElevenLabs speech-to-text and text-to-speech
+- Real-time voice processing
+- Voice activity detection
+- Multiple language support
 
 ### Responsive Design
 - Mobile-first approach
@@ -106,10 +141,11 @@ The app includes regional insights and examples relevant to Morocco:
 
 ## 🔧 API Integration Points
 
-### ElevenLabs (Voice Input)
+### ElevenLabs (Voice Input/Output)
 - Speech-to-text conversion
 - Voice response generation
-- Multi-language support ready
+- Multi-language support
+- Voice customization options
 
 ### Tavus (Video Coaching)
 - Personalized video generation
@@ -120,6 +156,7 @@ The app includes regional insights and examples relevant to Morocco:
 - Authentication and user management
 - Real-time database operations
 - Row Level Security (RLS)
+- Edge Functions for serverless logic
 - JSON data storage for flexible career plan structure
 
 ## 📊 Analytics & Insights
@@ -128,6 +165,7 @@ The app includes regional insights and examples relevant to Morocco:
 - User engagement metrics
 - Regional job market insights
 - Success rate monitoring
+- Chatbot conversation analytics
 
 ## 🚀 Deployment
 
@@ -138,6 +176,14 @@ npm run build
 ```
 
 Deploy the `dist` folder to Netlify or use the Netlify CLI for automated deployment.
+
+## 🔒 Security Features
+
+- Row Level Security (RLS) on all database tables
+- Secure API key management
+- User data encryption
+- CORS protection
+- Input validation and sanitization
 
 ## 🤝 Contributing
 
@@ -157,6 +203,8 @@ This project is licensed under the MIT License.
 - Icons by [Lucide](https://lucide.dev)
 - UI components styled with [Tailwind CSS](https://tailwindcss.com)
 - Animations powered by [Framer Motion](https://framer.com/motion)
+- Voice processing by [ElevenLabs](https://elevenlabs.io)
+- Video generation by [Tavus](https://tavus.io)
 
 ---
 

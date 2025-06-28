@@ -4,15 +4,17 @@ import {
   MessageCircle, 
   X, 
   Send, 
-  Mic, 
-  MicOff, 
   Bot, 
   User,
   Loader2,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import VoiceInput from './VoiceInput';
+import { textToSpeech, playAudio, isVoiceEnabled } from '../services/voiceService';
 
 interface Message {
   id: string;
@@ -33,7 +35,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +52,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
           timestamp: new Date()
         };
         setMessages([welcomeMessage]);
+        
+        // Auto-speak welcome message if voice is enabled
+        if (voiceEnabled && isVoiceEnabled()) {
+          speakMessage(welcomeMessage.content);
+        }
       }
       
       // Focus input
@@ -63,13 +72,30 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+  const speakMessage = async (text: string) => {
+    if (!voiceEnabled || !isVoiceEnabled() || isPlaying) return;
+
+    setIsPlaying(true);
+    try {
+      const result = await textToSpeech(text);
+      if (result.success && result.audioData) {
+        await playAudio(result.audioData, result.mimeType);
+      }
+    } catch (error) {
+      console.error('Speech synthesis error:', error);
+    } finally {
+      setIsPlaying(false);
+    }
+  };
+
+  const sendMessage = async (messageText?: string) => {
+    const textToSend = messageText || inputMessage;
+    if (!textToSend.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputMessage,
+      content: textToSend,
       timestamp: new Date()
     };
 
@@ -84,7 +110,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: inputMessage,
+          message: textToSend,
           conversationId,
           userId: user?.id
         }),
@@ -105,6 +131,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
       setMessages(prev => [...prev, assistantMessage]);
       setConversationId(data.conversationId);
 
+      // Auto-speak response if voice is enabled
+      if (voiceEnabled && isVoiceEnabled()) {
+        speakMessage(data.response);
+      }
+
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -119,17 +150,17 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
     }
   };
 
+  const handleVoiceTranscript = (transcript: string) => {
+    setInputMessage(transcript);
+    // Auto-send voice messages
+    setTimeout(() => sendMessage(transcript), 500);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
-  };
-
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    // Voice recording logic would go here
-    // For now, just show the UI state
   };
 
   const formatMessage = (content: string) => {
@@ -191,11 +222,30 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
           </div>
           <div>
             <h3 className="font-semibold text-gray-800">Career Assistant</h3>
-            <p className="text-xs text-gray-600">Always here to help</p>
+            <p className="text-xs text-gray-600 flex items-center space-x-2">
+              <span>Always here to help</span>
+              {isVoiceEnabled() && (
+                <span className="flex items-center space-x-1">
+                  <span>•</span>
+                  <span>🎤 Voice enabled</span>
+                </span>
+              )}
+            </p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
+          {isVoiceEnabled() && (
+            <button
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`p-1 rounded-full transition-colors ${
+                voiceEnabled ? 'text-primary-600 hover:bg-primary-50' : 'text-gray-400 hover:bg-gray-100'
+              }`}
+              title={voiceEnabled ? 'Disable voice responses' : 'Enable voice responses'}
+            >
+              {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
+          )}
           <button
             onClick={() => setIsMinimized(!isMinimized)}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -246,10 +296,22 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
                       <div className="text-sm">
                         {message.role === 'assistant' ? formatMessage(message.content) : message.content}
                       </div>
-                      <div className={`text-xs mt-1 ${
+                      <div className={`text-xs mt-1 flex items-center justify-between ${
                         message.role === 'user' ? 'text-primary-100' : 'text-gray-500'
                       }`}>
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span>
+                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {message.role === 'assistant' && isVoiceEnabled() && (
+                          <button
+                            onClick={() => speakMessage(message.content)}
+                            disabled={isPlaying}
+                            className="ml-2 p-1 hover:bg-gray-200 rounded transition-colors"
+                            title="Play audio"
+                          >
+                            <Volume2 className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -280,6 +342,17 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Voice Input Section */}
+          {showVoiceInput && isVoiceEnabled() && (
+            <div className="px-4 py-2 border-t border-gray-100">
+              <VoiceInput
+                onTranscript={handleVoiceTranscript}
+                placeholder="Speak your question..."
+                className="w-full"
+              />
+            </div>
+          )}
+
           {/* Input */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center space-x-2">
@@ -294,20 +367,23 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
                   className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                   disabled={isLoading}
                 />
-                <button
-                  onClick={toggleRecording}
-                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-colors ${
-                    isRecording 
-                      ? 'text-red-500 hover:bg-red-50' 
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </button>
+                {isVoiceEnabled() && (
+                  <button
+                    onClick={() => setShowVoiceInput(!showVoiceInput)}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full transition-colors ${
+                      showVoiceInput 
+                        ? 'text-primary-500 bg-primary-50' 
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                    }`}
+                    title="Toggle voice input"
+                  >
+                    🎤
+                  </button>
+                )}
               </div>
               
               <button
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={!inputMessage.trim() || isLoading}
                 className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white p-3 rounded-xl hover:from-primary-600 hover:to-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
@@ -317,6 +393,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
             
             <div className="mt-2 text-xs text-gray-500 text-center">
               💡 Try asking: "What career should I choose?" or "Help me plan my learning"
+              {isVoiceEnabled() && <span> • 🎤 Voice input available</span>}
             </div>
           </div>
         </>
@@ -330,6 +407,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ user }) => {
             </span>
             <div className="flex items-center space-x-2">
               {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary-500" />}
+              {isPlaying && <Volume2 className="h-4 w-4 text-purple-500" />}
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             </div>
           </div>
