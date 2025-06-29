@@ -11,6 +11,9 @@ import Dashboard from './components/Dashboard';
 import UserHome from './components/UserHome';
 import About from './components/About';
 import Blog from './components/Blog';
+import TermsOfService from './components/TermsOfService';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import CookiePolicy from './components/CookiePolicy';
 import AuthModal from './components/AuthModal';
 import Chatbot from './components/Chatbot';
 import Footer from './components/Footer';
@@ -20,7 +23,7 @@ import { saveCareerPlan } from './services/careerService';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'blog' | 'input' | 'results' | 'dashboard' | 'user-home'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'blog' | 'input' | 'results' | 'dashboard' | 'user-home' | 'terms' | 'privacy' | 'cookies'>('home');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [careerPlan, setCareerPlan] = useState<CareerPlan | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -41,7 +44,7 @@ function App() {
         setCurrentPage('dashboard');
       } else if (session?.user && !page) {
         setCurrentPage('user-home');
-      } else if (page && ['home', 'about', 'blog', 'input', 'results'].includes(page)) {
+      } else if (page && ['home', 'about', 'blog', 'input', 'results', 'terms', 'privacy', 'cookies'].includes(page)) {
         setCurrentPage(page as any);
       }
       
@@ -189,7 +192,7 @@ function App() {
             onViewDashboard={() => setCurrentPage('dashboard')}
           />
         </div>
-        <Footer />
+        <Footer onNavigate={handleNavigation} />
         <Chatbot user={user} />
       </div>
     );
@@ -249,6 +252,45 @@ function App() {
             </motion.div>
           )}
 
+          {currentPage === 'terms' && (
+            <motion.div
+              key="terms"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="pt-16"
+            >
+              <TermsOfService />
+            </motion.div>
+          )}
+
+          {currentPage === 'privacy' && (
+            <motion.div
+              key="privacy"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="pt-16"
+            >
+              <PrivacyPolicy />
+            </motion.div>
+          )}
+
+          {currentPage === 'cookies' && (
+            <motion.div
+              key="cookies"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="pt-16"
+            >
+              <CookiePolicy />
+            </motion.div>
+          )}
+
           {currentPage === 'input' && (
             <motion.div
               key="input"
@@ -282,7 +324,7 @@ function App() {
         </AnimatePresence>
       </main>
       
-      <Footer />
+      <Footer onNavigate={handleNavigation} />
       
       <AuthModal 
         isOpen={showAuthModal}

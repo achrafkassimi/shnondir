@@ -21,6 +21,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
   });
   const [voiceTranscript, setVoiceTranscript] = useState('');
 
+  // Always show voice option, but indicate if setup is needed
   const voiceAvailable = isVoiceEnabled();
 
   const handleVoiceTranscript = (transcript: string) => {
@@ -130,20 +131,16 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                 <span>Text Input</span>
               </button>
               <button
-                onClick={() => voiceAvailable && setInputMode('voice')}
-                disabled={!voiceAvailable}
+                onClick={() => setInputMode('voice')}
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                  inputMode === 'voice' && voiceAvailable
+                  inputMode === 'voice'
                     ? 'bg-white shadow-sm text-primary-600'
-                    : voiceAvailable
-                    ? 'text-gray-600 hover:text-gray-800'
-                    : 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-600 hover:text-gray-800'
                 }`}
-                title={!voiceAvailable ? 'Voice input requires ElevenLabs API configuration' : ''}
               >
                 <span>🎤 Voice Input</span>
                 {!voiceAvailable && (
-                  <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
                     Setup Required
                   </span>
                 )}
@@ -152,14 +149,23 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
           </div>
 
           {/* Voice Setup Notice */}
-          {!voiceAvailable && (
+          {inputMode === 'voice' && !voiceAvailable && (
             <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
                 <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="text-blue-800 font-medium text-sm">Voice Input Available</h3>
+                  <h3 className="text-blue-800 font-medium text-sm">🎤 Voice Input Setup</h3>
                   <p className="text-blue-700 text-sm mt-1">
-                    To enable voice features, configure your ElevenLabs API key in the environment settings. 
+                    To enable voice features, add your ElevenLabs API key to the environment variables. 
+                    <br />
+                    <strong>Steps:</strong>
+                  </p>
+                  <ol className="text-blue-700 text-sm mt-2 ml-4 list-decimal">
+                    <li>Get your API key from <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="underline">ElevenLabs.io</a></li>
+                    <li>Add <code className="bg-blue-100 px-1 rounded">VITE_ELEVENLABS_API_KEY=your_key</code> to your .env file</li>
+                    <li>Restart the development server</li>
+                  </ol>
+                  <p className="text-blue-700 text-sm mt-2">
                     For now, you can use the text input below.
                   </p>
                 </div>
@@ -168,7 +174,7 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
           )}
           
           <AnimatePresence mode="wait">
-            {inputMode === 'voice' && voiceAvailable ? (
+            {inputMode === 'voice' ? (
               <motion.div
                 key="voice"
                 initial={{ opacity: 0, x: -20 }}
@@ -176,70 +182,90 @@ const InputSection: React.FC<InputSectionProps> = ({ onAnalyze, isAnalyzing }) =
                 exit={{ opacity: 0, x: 20 }}
                 className="text-center py-12"
               >
-                <VoiceInput
-                  onTranscript={handleVoiceTranscript}
-                  placeholder="Click to tell us about your career goals"
-                  className="mb-8"
-                />
-                
-                {voiceTranscript && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-8"
-                  >
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                      <h3 className="font-semibold text-blue-800 mb-2">What we heard:</h3>
-                      <p className="text-blue-700">{voiceTranscript}</p>
-                    </div>
+                {voiceAvailable ? (
+                  <>
+                    <VoiceInput
+                      onTranscript={handleVoiceTranscript}
+                      placeholder="Click to tell us about your career goals"
+                      className="mb-8"
+                    />
                     
-                    {/* Auto-parsed fields preview */}
-                    {(formData.name || formData.educationLevel || formData.interests) && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-                        <h3 className="font-semibold text-green-800 mb-3">Auto-detected information:</h3>
-                        <div className="grid md:grid-cols-3 gap-4 text-sm">
-                          {formData.name && (
-                            <div>
-                              <span className="font-medium text-green-700">Name:</span>
-                              <p className="text-green-600">{formData.name}</p>
-                            </div>
-                          )}
-                          {formData.educationLevel && (
-                            <div>
-                              <span className="font-medium text-green-700">Education:</span>
-                              <p className="text-green-600">{formData.educationLevel}</p>
-                            </div>
-                          )}
-                          {formData.interests && (
-                            <div>
-                              <span className="font-medium text-green-700">Interests:</span>
-                              <p className="text-green-600">{formData.interests}</p>
-                            </div>
-                          )}
+                    {voiceTranscript && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8"
+                      >
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                          <h3 className="font-semibold text-blue-800 mb-2">What we heard:</h3>
+                          <p className="text-blue-700">{voiceTranscript}</p>
                         </div>
-                      </div>
+                        
+                        {/* Auto-parsed fields preview */}
+                        {(formData.name || formData.educationLevel || formData.interests) && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                            <h3 className="font-semibold text-green-800 mb-3">Auto-detected information:</h3>
+                            <div className="grid md:grid-cols-3 gap-4 text-sm">
+                              {formData.name && (
+                                <div>
+                                  <span className="font-medium text-green-700">Name:</span>
+                                  <p className="text-green-600">{formData.name}</p>
+                                </div>
+                              )}
+                              {formData.educationLevel && (
+                                <div>
+                                  <span className="font-medium text-green-700">Education:</span>
+                                  <p className="text-green-600">{formData.educationLevel}</p>
+                                </div>
+                              )}
+                              {formData.interests && (
+                                <div>
+                                  <span className="font-medium text-green-700">Interests:</span>
+                                  <p className="text-green-600">{formData.interests}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleVoiceSubmit}
+                          disabled={isAnalyzing}
+                          className="btn-primary flex items-center justify-center space-x-2 py-4 px-8"
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                              <span>Analyzing Your Profile...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-5 w-5" />
+                              <span>Get My Career Recommendations</span>
+                            </>
+                          )}
+                        </motion.button>
+                      </motion.div>
                     )}
-                    
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleVoiceSubmit}
-                      disabled={isAnalyzing}
-                      className="btn-primary flex items-center justify-center space-x-2 py-4 px-8"
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="bg-gray-100 p-8 rounded-xl mb-6">
+                      <div className="text-6xl mb-4">🎤</div>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">Voice Input Setup Required</h3>
+                      <p className="text-gray-600">
+                        Configure your ElevenLabs API key to enable voice features
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setInputMode('text')}
+                      className="btn-primary"
                     >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          <span>Analyzing Your Profile...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-5 w-5" />
-                          <span>Get My Career Recommendations</span>
-                        </>
-                      )}
-                    </motion.button>
-                  </motion.div>
+                      Use Text Input Instead
+                    </button>
+                  </div>
                 )}
               </motion.div>
             ) : (

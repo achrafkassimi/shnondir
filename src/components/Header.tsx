@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Menu, X, User, LogOut, Home, BookOpen, Users, MessageSquare, ExternalLink } from 'lucide-react';
+import { Sparkles, Menu, X, User, LogOut, Home, BookOpen, Users, MessageSquare, ExternalLink, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
@@ -94,9 +94,18 @@ const Header: React.FC<HeaderProps> = ({
                 </button>
               </div>
             ) : (
-              <button onClick={onAuthClick} className="btn-primary">
-                Get Started
-              </button>
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={onAuthClick} 
+                  className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-50"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span className="text-sm font-medium">Sign In</span>
+                </button>
+                <button onClick={onAuthClick} className="btn-primary">
+                  Get Started
+                </button>
+              </div>
             )}
           </nav>
           
@@ -155,7 +164,14 @@ const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-gray-200 space-y-2">
+                  <button 
+                    onClick={onAuthClick}
+                    className="flex items-center space-x-3 w-full px-3 py-3 text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors rounded-lg"
+                  >
+                    <LogIn className="h-5 w-5" />
+                    <span className="font-medium">Sign In</span>
+                  </button>
                   <button onClick={onAuthClick} className="btn-primary w-full">
                     Get Started
                   </button>
