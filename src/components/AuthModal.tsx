@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { supabase, testSupabaseConnection } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,20 +21,70 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
   });
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (isOpen) {
+      checkConnection();
+      // Pre-fill with admin credentials for testing
+      if (import.meta.env.DEV) {
+        setFormData({
+          email: 'admin@careerspark.com',
+          password: 'Admin123!',
+          name: ''
+        });
+      }
+    }
+  }, [isOpen]);
+
+  const checkConnection = async () => {
+    setConnectionStatus('checking');
+    const isConnected = await testSupabaseConnection();
+    setConnectionStatus(isConnected ? 'connected' : 'error');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    // Check if Supabase is properly configured
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      setError('Supabase is not properly configured. Please check your environment variables.');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
-        if (error) throw error;
+        
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            setError('Invalid email or password. If you\'re testing, try using admin@careerspark.com with password Admin123!');
+          } else {
+            setError(error.message);
+          }
+          throw error;
+        }
+
+        // Create user profile if it doesn't exist
+        if (data.user) {
+          const { error: profileError } = await supabase
+            .from('users')
+            .upsert({
+              id: data.user.id,
+              email: data.user.email,
+              name: data.user.user_metadata?.name || formData.name || 'User'
+            }, { onConflict: 'id' });
+
+          if (profileError) {
+            console.warn('Could not create/update user profile:', profileError);
+          }
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -42,13 +93,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
             }
           }
         });
+        
         if (error) throw error;
+
+        if (data.user && !data.session) {
+          setError('Please check your email for a confirmation link before signing in.');
+          setLoading(false);
+          return;
+        }
       }
       
       onAuthSuccess();
       onClose();
     } catch (error: any) {
-      setError(error.message);
+      console.error('Auth error:', error);
+      if (!error.message.includes('Invalid login credentials')) {
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -80,6 +141,34 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
               {isLogin ? 'Sign in to access your career plans' : 'Create your account to save your progress'}
             </p>
           </div>
+
+          {/* Connection Status */}
+          {connectionStatus === 'checking' && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-700 text-sm">Checking connection...</p>
+            </div>
+          )}
+
+          {connectionStatus === 'error' && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
+                <p className="text-red-700 text-sm">
+                  Connection error. Please check your Supabase configuration.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Development Helper */}
+          {import.meta.env.DEV && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-700 text-sm font-medium">Development Mode</p>
+              <p className="text-yellow-600 text-xs mt-1">
+                Default admin credentials: admin@careerspark.com / Admin123!
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {!isLogin && (
@@ -144,14 +233,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-700 text-sm">{error}</p>
+                <div className="flex items-start">
+                  <AlertCircle className="h-4 w-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
               </div>
             )}
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full btn-primary py-3"
+              disabled={loading || connectionStatus === 'error'}
+              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
