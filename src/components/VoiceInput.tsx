@@ -8,7 +8,8 @@ import {
   Loader2, 
   AlertCircle,
   CheckCircle,
-  Settings
+  Settings,
+  ExternalLink
 } from 'lucide-react';
 import { 
   AudioRecorder, 
@@ -44,10 +45,13 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
   const [voiceActivity, setVoiceActivity] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSetupHelp, setShowSetupHelp] = useState(false);
   
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number>();
+
+  const voiceAvailable = isVoiceEnabled();
 
   useEffect(() => {
     if (!recorderRef.current) {
@@ -65,8 +69,9 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
   }, []);
 
   const startRecording = async () => {
-    if (!isVoiceEnabled()) {
+    if (!voiceAvailable) {
       setError('Voice features require ElevenLabs API configuration.');
+      setShowSetupHelp(true);
       return;
     }
 
@@ -107,11 +112,24 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
             await speakResponse(result.transcript);
           }
         } else {
-          setError(result.fallback || 'Could not understand speech. Please try again.');
+          const errorMsg = result.error || 'Could not understand speech. Please try again.';
+          setError(errorMsg);
+          
+          // Show setup help if it's an API configuration issue
+          if (errorMsg.toLowerCase().includes('api') || errorMsg.toLowerCase().includes('key') || errorMsg.toLowerCase().includes('configured')) {
+            setShowSetupHelp(true);
+          }
         }
       }
-    } catch (error) {
-      setError('Failed to process speech. Please try again.');
+    } catch (error: any) {
+      const errorMsg = error.message || 'Failed to process speech. Please try again.';
+      setError(errorMsg);
+      
+      // Show setup help if it's an API configuration issue
+      if (errorMsg.toLowerCase().includes('api') || errorMsg.toLowerCase().includes('key') || errorMsg.toLowerCase().includes('configured')) {
+        setShowSetupHelp(true);
+      }
+      
       console.error('Speech processing error:', error);
     } finally {
       setIsProcessing(false);
@@ -184,6 +202,9 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
   };
 
   const getButtonColor = () => {
+    if (!voiceAvailable) {
+      return 'from-gray-400 to-gray-500';
+    }
     if (isRecording) {
       return voiceActivity 
         ? 'from-green-500 to-green-600' 
@@ -199,27 +220,21 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     return <Mic className="h-6 w-6" />;
   };
 
-  // If voice is not enabled, don't render the component at all
-  // The parent component will handle showing the appropriate message
-  if (!isVoiceEnabled()) {
-    return null;
-  }
-
   return (
     <div className={`relative ${className}`}>
       {/* Main Voice Button */}
       <div className="flex items-center justify-center">
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={toggleRecording}
+          whileHover={{ scale: voiceAvailable ? 1.05 : 1 }}
+          whileTap={{ scale: voiceAvailable ? 0.95 : 1 }}
+          onClick={voiceAvailable ? toggleRecording : () => setShowSetupHelp(true)}
           disabled={disabled || isProcessing}
           className={`relative w-20 h-20 rounded-full bg-gradient-to-r ${getButtonColor()} text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {getButtonIcon()}
           
           {/* Audio level indicator */}
-          {isRecording && (
+          {isRecording && voiceAvailable && (
             <motion.div
               className="absolute inset-0 rounded-full border-4 border-white/30"
               animate={{
@@ -230,6 +245,13 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
                 repeat: Infinity,
               }}
             />
+          )}
+
+          {/* Setup indicator */}
+          {!voiceAvailable && (
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+              <Settings className="h-3 w-3 text-white" />
+            </div>
           )}
         </motion.button>
 
@@ -245,7 +267,26 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
       {/* Status Text */}
       <div className="text-center mt-4">
         <AnimatePresence mode="wait">
-          {isRecording && (
+          {!voiceAvailable && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="text-sm"
+            >
+              <div className="font-medium text-orange-600">
+                🔧 Setup Required
+              </div>
+              <button
+                onClick={() => setShowSetupHelp(true)}
+                className="text-orange-500 hover:text-orange-600 text-xs mt-1 underline"
+              >
+                Click for setup instructions
+              </button>
+            </motion.div>
+          )}
+
+          {voiceAvailable && isRecording && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -261,7 +302,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
             </motion.div>
           )}
           
-          {isProcessing && (
+          {voiceAvailable && isProcessing && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -272,7 +313,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
             </motion.div>
           )}
           
-          {isPlaying && (
+          {voiceAvailable && isPlaying && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -283,7 +324,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
             </motion.div>
           )}
           
-          {!isRecording && !isProcessing && !isPlaying && (
+          {voiceAvailable && !isRecording && !isProcessing && !isPlaying && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -295,6 +336,72 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Setup Help Modal */}
+      <AnimatePresence>
+        {showSetupHelp && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="absolute top-full left-1/2 transform -translate-x-1/2 mt-4 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-20 w-96 max-w-[90vw]"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-orange-100 p-2 rounded-full">
+                  <Settings className="h-5 w-5 text-orange-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800">Voice Setup Required</h3>
+              </div>
+              <button
+                onClick={() => setShowSetupHelp(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-4 text-sm">
+              <p className="text-gray-600">
+                To enable voice features, you need to configure your ElevenLabs API key:
+              </p>
+              
+              <ol className="text-gray-700 space-y-2 ml-4 list-decimal">
+                <li>
+                  Get your API key from{' '}
+                  <a 
+                    href="https://elevenlabs.io" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 underline inline-flex items-center space-x-1"
+                  >
+                    <span>ElevenLabs.io</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </li>
+                <li>Add this to your <code className="bg-gray-100 px-1 rounded">.env</code> file:</li>
+              </ol>
+              
+              <div className="bg-gray-50 p-3 rounded-lg border">
+                <code className="text-xs text-gray-800">
+                  VITE_ELEVENLABS_API_KEY=your_api_key_here
+                </code>
+              </div>
+              
+              <ol start={3} className="text-gray-700 space-y-2 ml-4 list-decimal">
+                <li>Restart your development server</li>
+                <li>Refresh this page</li>
+              </ol>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-blue-800 text-xs">
+                  <strong>Note:</strong> Voice features are optional. You can use text input without any setup.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Transcript Display */}
       {transcript && (
@@ -325,6 +432,14 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
             <div>
               <p className="text-red-800 font-medium text-sm">Error:</p>
               <p className="text-red-700 mt-1">{error}</p>
+              {!voiceAvailable && (
+                <button
+                  onClick={() => setShowSetupHelp(true)}
+                  className="text-red-600 hover:text-red-700 text-xs mt-2 underline"
+                >
+                  View setup instructions
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -343,6 +458,17 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
             
             <div className="space-y-3">
               <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Voice Features</span>
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  voiceAvailable 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-orange-100 text-orange-800'
+                }`}>
+                  {voiceAvailable ? 'Enabled' : 'Setup Required'}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Auto-speak responses</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -352,14 +478,18 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
                       // This would be passed as a prop or managed by parent
                     }}
                     className="sr-only peer"
+                    disabled={!voiceAvailable}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 peer-disabled:opacity-50"></div>
                 </label>
               </div>
               
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Voice Quality</label>
-                <select className="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                <select 
+                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                  disabled={!voiceAvailable}
+                >
                   <option value="standard">Standard</option>
                   <option value="high">High Quality</option>
                   <option value="premium">Premium</option>
@@ -368,13 +498,28 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
               
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Language</label>
-                <select className="w-full text-sm border border-gray-300 rounded px-2 py-1">
+                <select 
+                  className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+                  disabled={!voiceAvailable}
+                >
                   <option value="en">English</option>
                   <option value="fr">French</option>
                   <option value="ar">Arabic</option>
                   <option value="es">Spanish</option>
                 </select>
               </div>
+
+              {!voiceAvailable && (
+                <button
+                  onClick={() => {
+                    setShowSettings(false);
+                    setShowSetupHelp(true);
+                  }}
+                  className="w-full text-sm bg-orange-500 hover:bg-orange-600 text-white py-2 px-3 rounded-lg transition-colors"
+                >
+                  Setup Voice Features
+                </button>
+              )}
             </div>
           </motion.div>
         )}
