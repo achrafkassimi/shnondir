@@ -69,8 +69,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
         
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            if (formData.email === 'admin@careerspark.com' && import.meta.env.DEV) {
-              setError('Admin user not found. Please run the setup script first.');
+            if (formData.email === 'admin@careerspark.com') {
+              setError('Admin user not found. Please run the setup script to create the admin user.');
               setShowSetupInstructions(true);
             } else {
               setError('Invalid email or password. Please check your credentials and try again.');
@@ -78,7 +78,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
           } else {
             setError(error.message);
           }
-          throw error;
+          setLoading(false);
+          return;
         }
 
         // Create user profile if it doesn't exist
@@ -106,7 +107,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
           }
         });
         
-        if (error) throw error;
+        if (error) {
+          setError(error.message);
+          setLoading(false);
+          return;
+        }
 
         if (data.user && !data.session) {
           setError('Please check your email for a confirmation link before signing in.');
@@ -119,9 +124,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
       onClose();
     } catch (error: any) {
       console.error('Auth error:', error);
-      if (!error.message.includes('Invalid login credentials')) {
-        setError(error.message);
-      }
+      setError(error.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -190,21 +193,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
               <div className="flex items-start">
                 <AlertCircle className="h-5 w-5 text-yellow-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-yellow-700 text-sm font-medium mb-2">Supabase Setup Required</p>
+                  <p className="text-yellow-700 text-sm font-medium mb-2">Admin User Setup Required</p>
                   <div className="text-yellow-600 text-xs space-y-2">
-                    <p><strong>Step 1:</strong> Create a Supabase project at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer\" className="underline inline-flex items-center">supabase.com <ExternalLink className="h-3 w-3 ml-1" /></a></p>
-                    <p><strong>Step 2:</strong> Get your project URL and anon key from Settings → API</p>
-                    <p><strong>Step 3:</strong> Create a <code className="bg-yellow-100 px-1 rounded">.env</code> file in your project root:</p>
-                    <div className="bg-yellow-100 p-2 rounded text-xs font-mono">
-                      VITE_SUPABASE_URL=your_project_url<br/>
-                      VITE_SUPABASE_ANON_KEY=your_anon_key<br/>
-                      SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-                    </div>
-                    <p><strong>Step 4:</strong> Run the database migrations and setup script:</p>
+                    <p><strong>Quick Fix:</strong> Run this command in your terminal:</p>
                     <div className="bg-yellow-100 p-2 rounded text-xs font-mono">
                       npm run setup-admin
                     </div>
-                    <p><strong>Step 5:</strong> Restart your development server</p>
+                    <p>This will create the admin user (admin@careerspark.com) in your Supabase project.</p>
+                    <p><strong>If the command fails:</strong></p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li>Check your <code className="bg-yellow-100 px-1 rounded">.env</code> file has correct Supabase credentials</li>
+                      <li>Make sure you're using the <strong>service_role</strong> key, not the anon key</li>
+                      <li>Verify your Supabase project is active</li>
+                      <li>Restart your development server after running the setup</li>
+                    </ol>
                   </div>
                 </div>
               </div>

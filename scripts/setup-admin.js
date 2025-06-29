@@ -7,6 +7,9 @@ dotenv.config();
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+console.log('🚀 CareerSpark Admin Setup');
+console.log('========================\n');
+
 console.log('🔍 Checking environment variables...');
 console.log('VITE_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
 console.log('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓ Set' : '✗ Missing');
@@ -17,6 +20,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
   console.error('- VITE_SUPABASE_URL=your_supabase_project_url');
   console.error('- SUPABASE_SERVICE_ROLE_KEY=your_service_role_key');
   console.error('\nYou can find these in your Supabase project settings under API.');
+  console.error('Make sure to use the service_role key, not the anon key for admin operations.');
   process.exit(1);
 }
 
@@ -81,7 +85,7 @@ async function createAdminUser() {
   try {
     console.log('\n🔧 Creating admin user...');
     
-    // Create the admin user with more detailed error handling
+    // Create the admin user
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: 'admin@careerspark.com',
       password: 'Admin123!',
@@ -100,7 +104,7 @@ async function createAdminUser() {
       });
       
       if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
-        console.log('ℹ️ Admin user already exists, skipping creation');
+        console.log('ℹ️ Admin user already exists, fetching existing user...');
         return await checkExistingAdmin();
       }
       
@@ -111,7 +115,7 @@ async function createAdminUser() {
     console.log('📧 Email:', authData.user.email);
     console.log('🆔 User ID:', authData.user.id);
 
-    // Create user profile with better error handling
+    // Create user profile
     console.log('\n👤 Creating user profile...');
     
     const { error: profileError } = await supabase
@@ -148,6 +152,7 @@ async function createAdminUser() {
     if (error.message.includes('JWT')) {
       console.error('\n💡 This appears to be an authentication issue.');
       console.error('Please check your SUPABASE_SERVICE_ROLE_KEY is correct.');
+      console.error('Make sure you are using the service_role key, not the anon key.');
     } else if (error.message.includes('not found') || error.message.includes('404')) {
       console.error('\n💡 This appears to be a URL issue.');
       console.error('Please check your VITE_SUPABASE_URL is correct.');
@@ -162,13 +167,11 @@ async function createAdminUser() {
 
 async function main() {
   try {
-    console.log('🚀 CareerSpark Admin Setup');
-    console.log('========================\n');
-    
     // Test database connection first
     const connectionOk = await testConnection();
     if (!connectionOk) {
       console.error('\n❌ Cannot proceed without database connection');
+      console.error('Please check your Supabase configuration and try again.');
       process.exit(1);
     }
     
@@ -180,8 +183,7 @@ async function main() {
       console.log('\n📋 Login credentials:');
       console.log('Email: admin@careerspark.com');
       console.log('Password: Admin123!');
-      console.log('\n🌐 You can now access the admin dashboard at:');
-      console.log(`${supabaseUrl.replace('/rest/v1', '')}/?page=admin`);
+      console.log('\n🌐 You can now sign in to the application.');
       return;
     }
     
@@ -193,22 +195,21 @@ async function main() {
       console.log('\n📋 Login credentials:');
       console.log('Email: admin@careerspark.com');
       console.log('Password: Admin123!');
-      console.log('\n🌐 You can now access the admin dashboard at:');
-      console.log(`${supabaseUrl.replace('/rest/v1', '')}/?page=admin`);
       console.log('\n💡 Next steps:');
-      console.log('1. Start your development server: npm run dev');
+      console.log('1. Restart your development server if it\'s running');
       console.log('2. Navigate to the login page');
-      console.log('3. Sign in with the admin credentials');
-      console.log('4. Access the admin dashboard from the header menu');
+      console.log('3. Sign in with the admin credentials above');
+      console.log('4. You should now be able to access the application');
     }
 
   } catch (error) {
     console.error('\n💥 Setup failed:', error.message);
     console.error('\n🔧 Troubleshooting steps:');
     console.error('1. Verify your .env file contains the correct Supabase credentials');
-    console.error('2. Check that your Supabase project is active and accessible');
-    console.error('3. Ensure the service role key has admin permissions');
-    console.error('4. Try running the database migrations first');
+    console.error('2. Make sure you are using the service_role key, not the anon key');
+    console.error('3. Check that your Supabase project is active and accessible');
+    console.error('4. Ensure the service role key has admin permissions');
+    console.error('5. Try running the database migrations first if you haven\'t');
     process.exit(1);
   }
 }
