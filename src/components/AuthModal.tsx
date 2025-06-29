@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { X, Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 
 interface AuthModalProps {
@@ -20,6 +20,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
     name: ''
   });
   const [error, setError] = useState('');
+  const [showSetupInstructions, setShowSetupInstructions] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -45,6 +46,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
     e.preventDefault();
     setLoading(true);
     setError('');
+    setShowSetupInstructions(false);
 
     // Check if Supabase is properly configured
     if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
@@ -62,7 +64,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
         
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            setError('Invalid email or password. If you\'re testing, try using admin@careerspark.com with password Admin123!');
+            if (formData.email === 'admin@careerspark.com' && import.meta.env.DEV) {
+              setError('Admin user not found. Please run the setup script first.');
+              setShowSetupInstructions(true);
+            } else {
+              setError('Invalid email or password. Please check your credentials and try again.');
+            }
           } else {
             setError(error.message);
           }
@@ -149,6 +156,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
             </div>
           )}
 
+          {connectionStatus === 'connected' && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                <p className="text-green-700 text-sm">Connected to Supabase</p>
+              </div>
+            </div>
+          )}
+
           {connectionStatus === 'error' && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center">
@@ -160,12 +176,33 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
             </div>
           )}
 
+          {/* Setup Instructions */}
+          {showSetupInstructions && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start">
+                <AlertCircle className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-yellow-700 text-sm font-medium">Setup Required</p>
+                  <p className="text-yellow-600 text-xs mt-1">
+                    Run the following command in your terminal to create the admin user:
+                  </p>
+                  <code className="block mt-2 p-2 bg-yellow-100 rounded text-xs font-mono">
+                    npm run setup-admin
+                  </code>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Development Helper */}
-          {import.meta.env.DEV && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-700 text-sm font-medium">Development Mode</p>
-              <p className="text-yellow-600 text-xs mt-1">
+          {import.meta.env.DEV && !showSetupInstructions && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-700 text-sm font-medium">Development Mode</p>
+              <p className="text-blue-600 text-xs mt-1">
                 Default admin credentials: admin@careerspark.com / Admin123!
+              </p>
+              <p className="text-blue-600 text-xs">
+                If login fails, run: <code className="font-mono">npm run setup-admin</code>
               </p>
             </div>
           )}
