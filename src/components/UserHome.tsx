@@ -14,7 +14,8 @@ import {
   ArrowRight,
   CheckCircle,
   BarChart3,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -114,6 +115,12 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onCreateNew, onViewDashboard 
     }
   };
 
+  const handleViewDashboard = () => {
+    // Open dashboard in new tab to preserve current session
+    const dashboardUrl = `${window.location.origin}/?page=dashboard`;
+    window.open(dashboardUrl, '_blank');
+  };
+
   const quickActions = [
     {
       title: 'Create New Plan',
@@ -127,7 +134,8 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onCreateNew, onViewDashboard 
       description: 'See all your career plans',
       icon: BarChart3,
       color: 'from-green-500 to-green-600',
-      action: onViewDashboard
+      action: handleViewDashboard,
+      external: true
     },
     {
       title: 'Chat with AI',
@@ -243,13 +251,20 @@ const UserHome: React.FC<UserHomeProps> = ({ user, onCreateNew, onViewDashboard 
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={action.action}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-left hover:shadow-md transition-all duration-200"
+                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-left hover:shadow-md transition-all duration-200 group"
                   >
                     <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${action.color} text-white mb-4`}>
                       <action.icon className="h-6 w-6" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">{action.title}</h3>
-                    <p className="text-gray-600 text-sm">{action.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">{action.title}</h3>
+                        <p className="text-gray-600 text-sm">{action.description}</p>
+                      </div>
+                      {action.external && (
+                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      )}
+                    </div>
                   </motion.button>
                 ))}
               </div>

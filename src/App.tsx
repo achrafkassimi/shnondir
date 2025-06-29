@@ -28,27 +28,49 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check URL parameters for page routing
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) {
+      
+      // Handle page routing
+      if (page === 'dashboard' && session?.user) {
+        setCurrentPage('dashboard');
+      } else if (session?.user && !page) {
         setCurrentPage('user-home');
+      } else if (page && ['home', 'about', 'blog', 'input', 'results'].includes(page)) {
+        setCurrentPage(page as any);
       }
+      
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) {
+      if (session?.user && currentPage === 'home') {
         setCurrentPage('user-home');
-      } else {
+      } else if (!session?.user && ['dashboard', 'user-home'].includes(currentPage)) {
         setCurrentPage('home');
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Update URL when page changes
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (currentPage !== 'home') {
+      url.searchParams.set('page', currentPage);
+    } else {
+      url.searchParams.delete('page');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, [currentPage]);
 
   const handleGetStarted = () => {
     if (user) {

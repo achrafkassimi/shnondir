@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Menu, X, User, LogOut, Home, BookOpen, Users, MessageSquare } from 'lucide-react';
+import { Sparkles, Menu, X, User, LogOut, Home, BookOpen, Users, MessageSquare, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
@@ -29,6 +29,13 @@ const Header: React.FC<HeaderProps> = ({
 
   const handleNavigation = (pageId: string) => {
     onNavigate(pageId);
+    setIsMenuOpen(false);
+  };
+
+  const handleDashboardClick = () => {
+    // Open dashboard in new tab to preserve current session
+    const dashboardUrl = `${window.location.origin}/?page=dashboard`;
+    window.open(dashboardUrl, '_blank');
     setIsMenuOpen(false);
   };
 
@@ -70,11 +77,13 @@ const Header: React.FC<HeaderProps> = ({
             {user ? (
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => handleNavigation('dashboard')}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-50"
+                  onClick={handleDashboardClick}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 group"
+                  title="Open Dashboard in new tab"
                 >
                   <User className="h-4 w-4" />
                   <span className="text-sm font-medium">Dashboard</span>
+                  <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
                 <button 
                   onClick={onSignOut}
@@ -130,11 +139,12 @@ const Header: React.FC<HeaderProps> = ({
               {user ? (
                 <div className="space-y-2 pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => handleNavigation('dashboard')}
-                    className="flex items-center space-x-3 w-full px-3 py-3 text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors rounded-lg"
+                    onClick={handleDashboardClick}
+                    className="flex items-center space-x-3 w-full px-3 py-3 text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors rounded-lg group"
                   >
                     <User className="h-5 w-5" />
                     <span className="font-medium">Dashboard</span>
+                    <ExternalLink className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                   <button 
                     onClick={onSignOut}
