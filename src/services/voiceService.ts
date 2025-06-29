@@ -75,7 +75,18 @@ export const speechToText = async (audioBlob: Blob): Promise<SpeechToTextResult>
     });
 
     if (!response.ok) {
-      throw new Error('Speech-to-text request failed');
+      // Try to extract the specific error message from the backend response
+      let errorMessage = 'Speech-to-text request failed';
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (parseError) {
+        // If we can't parse the response, use the status text
+        errorMessage = `Speech-to-text request failed: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -120,7 +131,18 @@ export const textToSpeech = async (
     });
 
     if (!response.ok) {
-      throw new Error('Text-to-speech request failed');
+      // Try to extract the specific error message from the backend response
+      let errorMessage = 'Text-to-speech request failed';
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      } catch (parseError) {
+        // If we can't parse the response, use the status text
+        errorMessage = `Text-to-speech request failed: ${response.status} ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();
