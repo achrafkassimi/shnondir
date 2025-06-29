@@ -14,6 +14,7 @@ import Blog from './components/Blog';
 import TermsOfService from './components/TermsOfService';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import CookiePolicy from './components/CookiePolicy';
+import AdminDashboard from './components/AdminDashboard';
 import AuthModal from './components/AuthModal';
 import Chatbot from './components/Chatbot';
 import Footer from './components/Footer';
@@ -23,7 +24,7 @@ import { saveCareerPlan } from './services/careerService';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'blog' | 'input' | 'results' | 'dashboard' | 'user-home' | 'terms' | 'privacy' | 'cookies'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'about' | 'blog' | 'input' | 'results' | 'dashboard' | 'user-home' | 'terms' | 'privacy' | 'cookies' | 'admin'>('home');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [careerPlan, setCareerPlan] = useState<CareerPlan | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -42,6 +43,8 @@ function App() {
       // Handle page routing
       if (page === 'dashboard' && session?.user) {
         setCurrentPage('dashboard');
+      } else if (page === 'admin' && session?.user && isAdmin(session.user)) {
+        setCurrentPage('admin');
       } else if (session?.user && !page) {
         setCurrentPage('user-home');
       } else if (page && ['home', 'about', 'blog', 'input', 'results', 'terms', 'privacy', 'cookies'].includes(page)) {
@@ -56,7 +59,7 @@ function App() {
       setUser(session?.user ?? null);
       if (session?.user && currentPage === 'home') {
         setCurrentPage('user-home');
-      } else if (!session?.user && ['dashboard', 'user-home'].includes(currentPage)) {
+      } else if (!session?.user && ['dashboard', 'user-home', 'admin'].includes(currentPage)) {
         setCurrentPage('home');
       }
     });
@@ -74,6 +77,11 @@ function App() {
     }
     window.history.replaceState({}, '', url.toString());
   }, [currentPage]);
+
+  // Check if user is admin
+  const isAdmin = (user: any): boolean => {
+    return user?.user_metadata?.role === 'admin' || user?.email === 'admin@careerspark.com';
+  };
 
   const handleGetStarted = () => {
     if (user) {
@@ -155,6 +163,19 @@ function App() {
           <p className="text-gray-600">Loading CareerSpark...</p>
         </div>
       </div>
+    );
+  }
+
+  // Admin dashboard view
+  if (currentPage === 'admin' && user && isAdmin(user)) {
+    return (
+      <>
+        <AdminDashboard 
+          user={user} 
+          onSignOut={handleSignOut}
+        />
+        <Chatbot user={user} />
+      </>
     );
   }
 
