@@ -192,7 +192,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
                 <div className="flex-1">
                   <p className="text-yellow-700 text-sm font-medium mb-2">Supabase Setup Required</p>
                   <div className="text-yellow-600 text-xs space-y-2">
-                    <p><strong>Step 1:</strong> Create a Supabase project at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center">supabase.com <ExternalLink className="h-3 w-3 ml-1" /></a></p>
+                    <p><strong>Step 1:</strong> Create a Supabase project at <a href="https://supabase.com" target=\"_blank" rel="noopener noreferrer\" className="underline inline-flex items-center">supabase.com <ExternalLink className="h-3 w-3 ml-1" /></a></p>
                     <p><strong>Step 2:</strong> Get your project URL and anon key from Settings → API</p>
                     <p><strong>Step 3:</strong> Create a <code className="bg-yellow-100 px-1 rounded">.env</code> file in your project root:</p>
                     <div className="bg-yellow-100 p-2 rounded text-xs font-mono">
